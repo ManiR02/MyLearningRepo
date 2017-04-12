@@ -1,0 +1,42 @@
+package testcases;
+
+import org.junit.Test;
+
+import wrappers.GenericWrappers;
+
+public class MergeLeadsWrappers extends GenericWrappers{
+
+	@Test
+		public void MergeLeadWrappers() throws InterruptedException {
+			invokeApp("chrome", "http://leaftaps.com");
+			enterById("username", "DemoSalesManager");
+			enterById("password", "crmsfa");
+			clickByClassName("decorativeSubmit");
+			clickByLink("CRM/SFA");
+			clickByLink("Leads");
+			clickByLink("Merge Leads");
+			clickByXpath("(//img[@alt='Lookup'])[1]");
+			switchToLastWindow();
+			enterByXpath("(//label[contains(text(),'Lead ID:')]/following::input)", "10946");
+			clickByXpath("(//button[contains(text(),'Find Leads')])");
+			Thread.sleep(3000);
+			clickByXpath("(//div[@class='x-grid3-cell-inner x-grid3-col-partyId'])[1]/a");
+			switchToParentWindow();
+			clickByXpath("(//img[@alt='Lookup'])[2]");
+			switchToLastWindow();
+			enterByXpath("(//label[contains(text(),'Lead ID:')]/following::input)", "10947");
+			clickByXpath("(//button[contains(text(),'Find Leads')])");
+			Thread.sleep(3000);
+			clickByXpath("(//div[@class='x-grid3-cell-inner x-grid3-col-partyId'])[1]/a");
+			switchToParentWindow();
+			clickByLinkNoSnap("Merge");
+			Thread.sleep(3000);
+			getAlertText();
+			acceptAlert();
+			clickByLink("Find Leads");
+			enterByXpath("(//label[contains(text(),'Lead ID:')]/following::input)", "10946");
+			clickByXpath("(//button[contains(text(),'Find Leads')])");
+			verifyTextContainsByXpath("//div[contains(text(),'No records to display')]", "No records to display");
+			closeBrowser();	
+		}
+	}
