@@ -7,7 +7,7 @@ import wrappers.GenericWrappers;
 public class MergeLeadsWrappers extends GenericWrappers{
 
 	@Test
-		public void MergeLeadWrappers() throws InterruptedException {
+		public void MergeLeadsWrappers() throws InterruptedException {
 			invokeApp("chrome", "http://leaftaps.com");
 			enterById("username", "DemoSalesManager");
 			enterById("password", "crmsfa");
@@ -17,14 +17,14 @@ public class MergeLeadsWrappers extends GenericWrappers{
 			clickByLink("Merge Leads");
 			clickByXpath("(//img[@alt='Lookup'])[1]");
 			switchToLastWindow();
-			enterByXpath("(//label[contains(text(),'Lead ID:')]/following::input)", "10946");
+			enterByXpath("(//label[contains(text(),'Lead ID:')]/following::input)", "10948");
 			clickByXpath("(//button[contains(text(),'Find Leads')])");
 			Thread.sleep(3000);
 			clickByXpath("(//div[@class='x-grid3-cell-inner x-grid3-col-partyId'])[1]/a");
 			switchToParentWindow();
 			clickByXpath("(//img[@alt='Lookup'])[2]");
 			switchToLastWindow();
-			enterByXpath("(//label[contains(text(),'Lead ID:')]/following::input)", "10947");
+			enterByXpath("(//label[contains(text(),'Lead ID:')]/following::input)", "10949");
 			clickByXpath("(//button[contains(text(),'Find Leads')])");
 			Thread.sleep(3000);
 			clickByXpath("(//div[@class='x-grid3-cell-inner x-grid3-col-partyId'])[1]/a");
@@ -34,9 +34,10 @@ public class MergeLeadsWrappers extends GenericWrappers{
 			getAlertText();
 			acceptAlert();
 			clickByLink("Find Leads");
-			enterByXpath("(//label[contains(text(),'Lead ID:')]/following::input)", "10946");
+			enterByXpath("(//label[contains(text(),'Lead ID:')]/following::input)", "10948");
 			clickByXpath("(//button[contains(text(),'Find Leads')])");
-			verifyTextContainsByXpath("//div[contains(text(),'No records to display')]", "No records to display");
+			//verifyTextContainsByXpath("//div[contains(text(),'No records to display')]", "No records to display");
+			verifyTextByXpath("//div[contains(text(),'No records to display')]", "No records to display");
 			closeBrowser();	
 		}
 	}
