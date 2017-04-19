@@ -18,7 +18,7 @@ public class Day1Homework1 {
 		
 		driver.get("http://www.facebook.com");
 		driver.findElementById("email").sendKeys("king.manit@gmail.com");
-		driver.findElementById("pass").sendKeys("ileadindia@2020");
+		driver.findElementById("pass").sendKeys("*************");
 		driver.findElementById("u_0_q").click();
 		Thread.sleep(5000);
 		driver.findElementById("userNavigationLabel").click();
