@@ -1,0 +1,90 @@
+package samplePackage;
+
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterGroups;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.AfterSuite;
+import org.testng.annotations.AfterTest;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeGroups;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeSuite;
+import org.testng.annotations.BeforeTest;
+import org.testng.annotations.Test;
+
+public class ParentClass {
+
+	@BeforeSuite
+	public void ParentBeforeSuite(){
+		System.out.println("Parent Before Suite");
+	}
+
+	@BeforeClass
+	public void ParentBeforeClass(){
+		System.out.println("Parent Before Class");
+	}
+
+	@BeforeTest
+	public void ParentBeforeTest(){
+		System.out.println("Parent Before Test");
+	}
+
+	@BeforeMethod
+	public void ParentBeforeMethod(){
+		System.out.println("Parent Before Method for every Test");
+	}
+
+	@BeforeGroups(groups={"Sccoter","Cycle","Car"})
+	public void ParentBeforeGroup(){
+		System.out.println("Parent Before Group");
+	}
+	public void ParentBeforeGroup1(){
+		System.out.println("Parent Before Group1");
+	}
+
+	@AfterSuite
+	public void ParentAfterSuite(){
+		System.out.println("Parent After Suite");
+	}
+
+	@AfterClass
+	public void ParentAfterClass(){
+		System.out.println("Parent After Class");
+	}
+
+	@AfterTest
+	public void ParentAfterTest(){
+		System.out.println("Parent After Test");
+	}
+
+	@AfterMethod
+	public void ParentAfterMethod(){
+		System.out.println("Parent After Method for every Test");
+	}
+
+	@AfterGroups(groups={"Cycle","Car"})
+	public void ParentAfterGroup(){
+		System.out.println("Parent After Group");
+	}
+
+	@Test (groups = {"Car"}, priority=3)
+	public void ParentTest1(){
+		System.out.println("Parent Test case Car is exeuted");
+	}
+
+	@Test (groups = {"Sccoter"}, priority=1)
+	public void ParentTest3(){
+		System.out.println("Parent Test case Sccoter 1 is exeuted");
+	}
+
+	@Test (groups = {"Sccoter"}, priority=1)
+	public void ParentTest2(){
+		System.out.println("Parent Test case Sccoter 2 is exeuted");
+	}
+
+	@Test (groups = {"Cycle"}, priority=2)
+	public void ParentTest0(){
+		System.out.println("Parent Test case Cycle is exeuted");
+	}
+
+}
