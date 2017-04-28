@@ -1,0 +1,79 @@
+package samplePackage;
+import org.junit.AfterClass;
+import org.testng.annotations.AfterGroups;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.AfterSuite;
+import org.testng.annotations.AfterTest;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeGroups;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeSuite;
+import org.testng.annotations.BeforeTest;
+import org.testng.annotations.Test;
+
+
+public class ChildClass1 extends ParentClass{
+
+	@BeforeSuite
+	public void Child1BeforeSuite(){
+		System.out.println("Child 1 Before Suite");
+	}
+
+	@BeforeClass
+	public void Child1BeforeClass(){
+		System.out.println("Child 1 Before Class");
+	}
+
+	@BeforeTest
+	public void Child1BeforeTest(){
+		System.out.println("Child 1 Before Test");
+	}
+
+	@BeforeMethod
+	public void Child1BeforeMethod(){
+		System.out.println("Child 1 Before Method for every Test");
+	}
+
+	@BeforeGroups(groups="ChildGroup2")
+	public void Child1BeforeGroup(){
+		System.out.println("#############Child 1 Before Group#############");
+	}
+
+	@AfterSuite
+	public void Child1AfterSuite(){
+		System.out.println("Child 1 After Suite");
+	}
+
+	@AfterClass
+	public void Child1AfterClass(){
+		System.out.println("Child 1 After Class");
+	}
+
+	@AfterTest
+	public void Child1AfterTest(){
+		System.out.println("Child 1 After Test");
+	}
+
+	@AfterMethod
+	public void Child1AfterMethod(){
+		System.out.println("Child 1 After Method for every Test");
+	}
+
+	@AfterGroups(groups="ChildGroup2")
+	public void Child1AfterGroup(){
+		System.out.println("#############Child 1 After Group#############");
+	}
+
+	@Test(groups="ChildGroup1")
+	public void Child1Test1(){
+		System.out.println("*********Child 1 Test case 1 is exeuted ************");
+	}
+
+	@Test(groups="ChildGroup2")
+	public void Child1Test2(){
+		System.out.println("************Child 1 Test case 2 is exeuted ************");
+	}
+
+}
+
+
