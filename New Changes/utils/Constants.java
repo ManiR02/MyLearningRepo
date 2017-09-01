@@ -54,6 +54,9 @@ public class Constants {
 	public static String BrowserList_TestExecute ="Test_Case_Execute";
 	public static String BrowserList_BrowserName ="Browser_Name";
 	public static String BrowserList_BrowserDesc ="Browser_Description";
-
+	
+	public static String Chrome_Browser = "chrome";
+	public static String Firefox_Browser = "Firefox";
+	public static String IE_Browser = "ie";
 
 }
