@@ -51,11 +51,23 @@ public class TestNGCreateXML {
 	public static void main(String[] args) {
 		//String testBatchFileName=null;
 
+		String browserExecuteStatus = null;
+		String browserExecuteName = null;
+		ReadExcel readBrowserExecExcel = null;
+		int noOfExecBrowsers = 0;
+		String browserExcelFilePath = null;
+		String browserExcelFileName = null;
+		String browserExcelFileXtn = null;
+		String testBatchParallelFile = null;
+		String testBatchSerialFile = null;
+		String testNGXMLFileWithAllSuites = null;
+		String testNGXMLFileWithAllSuitesIE = null;
+
 		try {
 
 			//Instantiate the Property file
 			sysProperty =new Properties();
-			sysProperty.load(new FileInputStream(new File("./src/properties/SystemConfig.properties")));
+			sysProperty.load(new FileInputStream(new File("./config/SystemConfig.properties")));
 
 			//Instantiate the Log file
 			String log4jConfPath = sysProperty.getProperty("log4jConfPath");
@@ -76,38 +88,81 @@ public class TestNGCreateXML {
 
 			//Create an object for this class for calling all the methods
 			TestNGCreateXML run = new TestNGCreateXML();
+			browserExcelFilePath = sysProperty.getProperty("testBrowserExcelFilePath");
+			browserExcelFileName = sysProperty.getProperty("testBrowserExcelFileName");
+			browserExcelFileXtn = ".xls";
+			testBatchParallelFile = sysProperty.getProperty("testBatchParallelFileName");
+			testBatchSerialFile = sysProperty.getProperty("testBatchSerialFileName");
+			
+			readBrowserExecExcel = new ReadExcel(browserExcelFilePath+browserExcelFileName+browserExcelFileXtn);
+			noOfExecBrowsers=readBrowserExecExcel.getRowCount(Constants.BrowserList_Sheet);
 
+			for (int i = 1; i <= noOfExecBrowsers; i++) {
+				browserExecuteStatus = readBrowserExecExcel.getCellData(Constants.BrowserList_Sheet, Constants.BrowserList_TestExecute, i);
+				browserExecuteName = readBrowserExecExcel.getCellData(Constants.BrowserList_Sheet, Constants.BrowserList_BrowserName, i);
+
+			if( browserExecuteStatus.equalsIgnoreCase(Constants.RUNMODE_YES) && (browserExecuteName.equalsIgnoreCase(Constants.Chrome_Browser))){
+			//Create Backup Result File Test NG XML 
+			run.createBackupResultFileTestNGXML();
 			//At first, create the testNG config file to set Pre conditions using TestBatch_Config xls
-			//Generate Config for Other browser than IE with Parallel Type
+			//Generate Config for Chrome browser with Parallel Type
 			run.createConfigTestNGXML("others");
+			
+			//Create TestNG Files from all the Parallel Batch sheets for Chrome Seperately
+			//(Input as Parallel Test Batch Excel Name)
+			run.createTestNGXMLsFromBatch("Parallel", testBatchParallelFile);
+			
+			//Create TestNG Files from all the Serial Batch sheets(Input as Serial Test Batch Excel Name)
+			run.createTestNGXMLsFromBatch("Serial", testBatchSerialFile);
+			
+			//Create Zip Result File Test NG XML
+			run.createZipResultFileTestNGXML();
+			}
+			else if( (browserExecuteStatus.equalsIgnoreCase(Constants.RUNMODE_YES)) && ((browserExecuteName.equalsIgnoreCase(Constants.IE_Browser)))){
+			
+			//Create Backup Result File Test NG XML 
+			run.createBackupResultFileTestNGXML();		
 			//Generate test Config for IE with Serial Type
 			run.createConfigTestNGXML("ie");
-
-			//Create TestNG Files from all the Parallel Batch sheets for Chrome, firefox seprate and IE Seperately
+			
+			//Create TestNG Files from all the Parallel Batch sheets for IE Seperately
 			//(Input as Parallel Test Batch Excel Name)
-			String testBatchParallelFile=sysProperty.getProperty("testBatchParallelFileName");
-			run.createTestNGXMLsFromBatch("Parallel", testBatchParallelFile);
 			run.createTestNGXMLsFromBatchForIE("Parallel", testBatchParallelFile);
-
-			//Create TestNG Files from all the Serial Batch sheets(Input as Serial Test Batch Excel Name)
-			String testBatchSerialFile=sysProperty.getProperty("testBatchSerialFileName");
-			run.createTestNGXMLsFromBatch("Serial", testBatchSerialFile);
 			run.createTestNGXMLsFromBatchForIE("Serial", testBatchSerialFile);
 			
+			//Create Zip Result File Test NG XML
+			run.createZipResultFileTestNGXML();
+				}
+			}
+			
+			for (int i = 1; i <= noOfExecBrowsers; i++) {
+				browserExecuteStatus = readBrowserExecExcel.getCellData(Constants.BrowserList_Sheet, Constants.BrowserList_TestExecute, i);
+				browserExecuteName = readBrowserExecExcel.getCellData(Constants.BrowserList_Sheet, Constants.BrowserList_BrowserName, i);
 
+			if( (browserExecuteStatus.equalsIgnoreCase(Constants.RUNMODE_YES)) && ((browserExecuteName.equalsIgnoreCase(Constants.Chrome_Browser)))){
+			
 			//Create the TestNG file with All the TestBatches (With Config, Parallel and serial TestNG XMLs)
-			String testNGXMLFileWithAllSuites = run.createFullSuiteTestNGXML();
-			String testNGXMLFileWithAllSuitesIE = run.createFullSuiteTestNGXMLForIE();
-
+			testNGXMLFileWithAllSuites = run.createFullSuiteTestNGXML();
+			
+				}
+			
+			else if( (browserExecuteStatus.equalsIgnoreCase(Constants.RUNMODE_YES)) && ((browserExecuteName.equalsIgnoreCase(Constants.IE_Browser)))){
+			testNGXMLFileWithAllSuitesIE = run.createFullSuiteTestNGXMLForIE();
+			
+			}
+			
 			//Create a Bat File with Browsers and  Batch file in the order as mentioned in Browser_exec_Order Excel file
 			run.createBatFileWithSuiteAndBrowsers(testNGXMLFileWithAllSuites,testNGXMLFileWithAllSuitesIE);
-
+			
 			//Create a Bat file with all the Serial xml, Parallel xml, Config xml and Browserwise xml(Incase of reducing load to TestNG at stretch)
-			run.createBatFileWithXMLsAndBrowsers();
+//			run.createBatFileWithXMLsAndBrowsers();
 
+			}
+			
 			log.info("********* COMPLETED GENERATING ALL THE TestNG and .bat FILES *********\n\n");
 			log.info("####### REFRESH THE PROJECT AND EXECUTE THE FILES! ########\n\n");
-
+			
+			
 		} catch (Exception e) {
 			log.info("Exception occured in TestNGCreateXML. Exception is "+e);
 			e.printStackTrace();
@@ -188,7 +243,7 @@ public class TestNGCreateXML {
 				//Iterator for the Splitting the TestNG file with configured no of TestCase count in a xml file
 				for (int batchIterator = 1; batchIterator <= totalBatchAfterSplit + 1; batchIterator++) {
 
-					log.info("Creating the Splitted file for the Batch : "+testBatchFileName+". Spilt file No : "+batchIterator);
+					log.info("Creating the Splitted file for the Batch : "+testBatchFileName+". Split file No : "+batchIterator);
 
 					//Instantiate the DOM to create XML
 					DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -752,10 +807,10 @@ public class TestNGCreateXML {
 			log.info("Generated the .bat file for the TestNG file...!");
 
 			//Create Bat file for the Full TestNG Batch
-			String fileFullPathWithoutExtention=sysProperty.getProperty("Main_TestNG_XML_FilePath")+ sysProperty.getProperty("bat_FileName_For_Full_Suite");
+			/*String fileFullPathWithoutExtention=sysProperty.getProperty("Main_TestNG_XML_FilePath")+ sysProperty.getProperty("bat_FileName_For_Full_Suite");
 			String contentToWrite=sysProperty.getProperty("Common_TestNG_XML_FileName")+".xml";
 			CreateBatFile.createTestNGBatFile(fileFullPathWithoutExtention);
-			CreateBatFile.writeTestNGBatFile(fileFullPathWithoutExtention,contentToWrite);
+			CreateBatFile.writeTestNGBatFile(fileFullPathWithoutExtention,contentToWrite);*/
 
 			return fileFullPath;
 
@@ -1011,6 +1066,122 @@ public class TestNGCreateXML {
 			log.info("Exception occured while creating the XML file : "+e);
 			e.printStackTrace();
 		}
+	}
+	
+	
+	/**
+	 * <b>createBackupResultFilesTestNGXML</b><br>
+	 * 
+	 * <p><b>Objective : To Create Backup Result Files TestNG XML <b></p>
+	 * <p>A TestNG File Generated by this method will Execute the Backup Result File class in utils package</p>
+	 *
+	 * @author Hari Prakash
+	 * @since Aug 01, 2017
+	 */
+
+	public void createBackupResultFileTestNGXML() throws Exception {		
+		String BackupfileFullPath;
+		try {
+			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+			Document doc = dBuilder.newDocument();
+			Element rootElement = doc.createElement("suite");
+			rootElement.setAttribute("name", "BackupTestResults");
+			doc.appendChild(rootElement);
+
+			try{
+				Element test = doc.createElement("test");
+				test.setAttribute("name", "Backup_Test_Results");
+				rootElement.appendChild(test);				
+
+				Element classes = doc.createElement("classes");
+				test.appendChild(classes);
+
+				Element singleClass = doc.createElement("class");
+				singleClass.setAttribute("name", "utils.BackupResultFiles");
+				classes.appendChild(singleClass);
+
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+
+			TransformerFactory transformFactory = TransformerFactory.newInstance();
+			Transformer transformer = transformFactory.newTransformer();
+			transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+			transformer.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM, "http://testng.org/testng-1.0.dtd");
+			DOMSource source = new DOMSource(doc);
+			BackupfileFullPath = sysProperty.getProperty("TestNG_XML_FilePath")
+					+sysProperty.getProperty("BackupResults_TestNG_XML_FileName")+".xml";
+			StreamResult result = new StreamResult(new File(BackupfileFullPath));
+			alltestNGFiles.add(BackupfileFullPath);
+			transformer.transform(source, result);
+
+			log.info("Generated the Results Backup TestNG File successfully. TestNG File : "+BackupfileFullPath);			
+
+		} catch (Exception e) {
+			log.info("Problem in generating Backup Result File Test NG File. Exception is : "+e);
+			e.printStackTrace();
+			throw e;
+		}
+
+	}
+
+	
+	/**
+	 * <b>createZipResultFileTestNGXML</b><br>
+	 * 
+	 * <p><b>Objective : To Create Zip Result Files TestNG XML <b></p>
+	 * <p>A TestNG File Generated by this method will Execute the Zip Result File class in utils package</p>
+	 *
+	 * @author Hari Prakash
+	 * @since Aug 01, 2017
+	 */
+
+	public void createZipResultFileTestNGXML() throws Exception {		
+		String ZipfileFullPath;
+		try {
+			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+			Document doc = dBuilder.newDocument();
+			Element rootElement = doc.createElement("suite");
+			rootElement.setAttribute("name", "zipTestResults");
+			doc.appendChild(rootElement);
+
+			try{
+				Element test = doc.createElement("test");
+				test.setAttribute("name", "ZIP_Test_Results");
+				rootElement.appendChild(test);				
+
+				Element classes = doc.createElement("classes");
+				test.appendChild(classes);
+
+				Element singleClass = doc.createElement("class");
+				singleClass.setAttribute("name", "utils.ZipResultFiles");
+				classes.appendChild(singleClass);
+
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+
+			TransformerFactory transformFactory = TransformerFactory.newInstance();
+			Transformer transformer = transformFactory.newTransformer();
+			transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+			transformer.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM, "http://testng.org/testng-1.0.dtd");
+			DOMSource source = new DOMSource(doc);
+			ZipfileFullPath = sysProperty.getProperty("TestNG_XML_FilePath")
+					+sysProperty.getProperty("ZipResults_TestNG_XML_FileName")+".xml";
+			StreamResult result = new StreamResult(new File(ZipfileFullPath));
+			alltestNGFiles.add(ZipfileFullPath);
+			transformer.transform(source, result);		
+
+			log.info("Generated the Zip Results TestNg File successfully. TestNG File : "+ZipfileFullPath);			
+
+		} catch (Exception e) {
+			log.info("Problem in generating Backup Result File Test NG File. Exception is : "+e);
+			e.printStackTrace();
+			throw e;
+		}
+
 	}
 
 }
