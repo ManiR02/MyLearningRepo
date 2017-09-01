@@ -32,12 +32,12 @@ public class BrowserUpdate {
 		try {
 
 			Properties browserProp =new Properties();
-			browserProp.load(new FileInputStream(new File("./src/properties/browser.properties")));
+			browserProp.load(new FileInputStream(new File("./config/browser.properties")));
 
 			browserProp.setProperty("testBrowser", browserName);
 			browserProp.setProperty("testBrowserDesc", browserDesc);
 
-			FileOutputStream fileOut = new FileOutputStream(new File("./src/properties/browser.properties"));
+			FileOutputStream fileOut = new FileOutputStream(new File("./config/browser.properties"));
 			browserProp.store(fileOut, "Update the Browser details");
 			fileOut.close();
 
