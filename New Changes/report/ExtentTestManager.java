@@ -51,7 +51,7 @@ public class ExtentTestManager {
 	public synchronized static void startReportWithFileName(int count,String fileName) throws Exception{
 
 		property =new Properties();
-		property.load(new FileInputStream(new File("./src/properties/SystemConfig.properties")));
+		property.load(new FileInputStream(new File("./config/SystemConfig.properties")));
 
 		String log4jConfPath = property.getProperty("log4jConfPath");
 		PropertyConfigurator.configure(log4jConfPath);
