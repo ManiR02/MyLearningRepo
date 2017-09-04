@@ -32,6 +32,8 @@ public class CreateBatFile {
 		try {
 			fw = new FileWriter(fileName+".bat");
 			bw = new BufferedWriter(fw);
+			bw.write("cd .. "+"\n");
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
@@ -60,7 +62,7 @@ public class CreateBatFile {
 			fw = new FileWriter(fileName+".bat", true);
 			bw = new BufferedWriter(fw);
 
-			bw.write("java -cp \"JarFiles\\*;bin\" org.testng.TestNG "+content+"\n");
+			bw.write("java -cp \"lib\\*;CRMScripts.jar\" org.testng.TestNG "+content+"\n");
 
 		} catch (IOException e) {
 			e.printStackTrace();
