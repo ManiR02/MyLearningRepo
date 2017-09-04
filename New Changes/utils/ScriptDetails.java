@@ -60,7 +60,7 @@ public class ScriptDetails {
 		try{
 
 			sysProperty =new Properties();
-			sysProperty.load(new FileInputStream(new File("./src/properties/SystemConfig.properties")));
+			sysProperty.load(new FileInputStream(new File("./config/SystemConfig.properties")));
 
 			String excelFilename = sysProperty.getProperty("OverviewExcelReportPath")+sysProperty.getProperty("OverviewExcelReportName");
 			String reportFilePath= sysProperty.getProperty("testReportFilePath");
@@ -319,7 +319,15 @@ public class ScriptDetails {
 									}
 									row.createCell(13).setCellValue(String.valueOf(compPassCount));
 									row.createCell(14).setCellValue(String.valueOf(compFailCount));
+									
+									try{
 									row.createCell(7).setCellValue(reportAllFailSteps);
+									
+									}catch(IllegalArgumentException e){
+										
+										e.getMessage();
+										
+									}
 									row.createCell(12).setCellValue(componentNames);
 
 								}
