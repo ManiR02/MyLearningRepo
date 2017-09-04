@@ -103,7 +103,7 @@ public class ReadExcel {
 				return "";
 
 			if(cell.getCellType()==Cell.CELL_TYPE_STRING)
-				return cell.getStringCellValue().trim();
+				return cell.getStringCellValue();
 
 			else if(cell.getCellType()==Cell.CELL_TYPE_NUMERIC )
 				return String.valueOf(cell.getNumericCellValue()).trim();
@@ -224,7 +224,8 @@ public class ReadExcel {
 
 			for(int i=0; i<colCount; i++){
 				if(headRow.getCell(i).getStringCellValue().equals(colName.trim())){
-					colNumber=i;					
+					colNumber=i;
+					break;
 				}					
 			}
 			if(colNumber==-1){
@@ -234,7 +235,8 @@ public class ReadExcel {
 			for(int j=0; j<rowCount; j++){
 				HSSFRow Suitecol = sheet.getRow(j);				
 				if(Suitecol.getCell(1).getStringCellValue().equals(rowName.trim())){
-					rowNumber=j;	
+					rowNumber=j;
+					break;
 				}					
 			}
 
