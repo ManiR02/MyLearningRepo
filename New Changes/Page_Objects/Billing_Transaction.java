@@ -1,6 +1,18 @@
 package Page_Objects;
 
+import java.io.File;
 import java.util.Hashtable;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
 
 import utils.ReadExcel;
 import wrappers.FunctionLibrary;
@@ -8,12 +20,23 @@ import wrappers.FunctionLibrary;
 public class Billing_Transaction extends FunctionLibrary {
 
 	public synchronized String billingTransactionPage(String locator){
+		
+		String multiLanguageExcelPath = System.getProperty("user.dir")+property.getProperty("resourceMgmtfilekeyPath");
 
+		String languageName = property.getProperty("Language_Required");
+		
+		ReadExcel excel=new ReadExcel(multiLanguageExcelPath);
+		
+		String[] xpathsplittext = null;
+		String resourceFileName = null;
+		String filePathLocation = null;
+		NodeList nodeList=null;
+		
 		try{
 			Hashtable<String, String> hs = new Hashtable<String, String>();
 
 			hs.put("billingMenuDropdown", "xpath#//a[@class='menu-icon dropdown-toggle']");
-			hs.put("billingButton", "xpath#//a[@title='Billing']");
+			hs.put("billingButton", "xpath#//a[@title='SettingResource>>Billing']");
 			hs.put("billingTnsBtn", "xpath#//div[@title='Billing Transaction']");
 			hs.put("ticketID", "id#txtTicketID");
 			hs.put("status", "id#transStatus");
@@ -54,11 +77,52 @@ public class Billing_Transaction extends FunctionLibrary {
 			hs.put("transferAmt", "xpath#//tr[@class='ui-widget-content jqgrow ui-row-ltr' and contains(@tabindex, '-1') and not (contains(@style, 'height'))]//td[@aria-describedby='subTransTable_Id']/following-sibling::td[@aria-describedby='subTransTable_TransferAmt']");
 			hs.put("adminCmts", "xpath#//tr[@class='ui-widget-content jqgrow ui-row-ltr' and contains(@tabindex, '-1') and not (contains(@style, 'height'))]//td[@aria-describedby='subTransTable_Id']/following-sibling::td[@aria-describedby='subTransTable_AdminComments']");
 
-			/*Runtimevalue.setProperty("locatorType", hs.get(locator).split("\\#")[0]);
+						
+			String xpathValue = hs.get(locator);
+			
+			if(xpathValue.contains(">>")){
+			
+				if(xpathValue.contains("title=")){
+				
+				System.out.println("title()");	
+					
+				Pattern pattern = Pattern.compile("xpath(.*)title(.*)='([\\sa-zA-Z>]+)']");
+				
+				Matcher matcher = pattern.matcher(xpathValue);
+				
+				while(matcher.find()){
+					
+					String splittedXpath = matcher.group(3);					
+					
+					System.out.println("splittedXpath3 :"+splittedXpath);
+					
+					xpathsplittext = splittedXpath.split(">>");
+					
+					resourceFileName = xpathsplittext[0] + excel.RetrieveAutomationKeyFromExcel("Extension_Language", "Resx_Extension", languageName);
+					
+					filePathLocation=property.getProperty("resourcesFilePath_GBR");
+					String resourceFileToGetValue=filePathLocation+"\\"+resourceFileName;
+					log.info("File path is "+resourceFileToGetValue);
+					File file=new File("//\\"+resourceFileToGetValue);
 
-		String locate = hs.get(locator).split("\\#")[1];*/
+					String commonAttribute=property.getProperty("attributeCommonValue");
+					String fullAttributewithName=commonAttribute+"[@name='"+ xpathsplittext[1] +"']/value";
+					log.info("Attribute to Retrieve Node value is : "+fullAttributewithName);
 
-			return hs.get(locator);
+					DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
+					DocumentBuilder builder=factory.newDocumentBuilder();
+					Document document=builder.parse(file);
+					document.getDocumentElement().normalize();
+					XPath xpath=XPathFactory.newInstance().newXPath();
+					nodeList=(NodeList)xpath.compile(fullAttributewithName).evaluate(document,XPathConstants.NODESET);
+
+					xpathValue =  xpathValue.replaceAll(splittedXpath, nodeList.item(0).getTextContent());
+
+					} 
+				}
+			}
+			
+			return xpathValue;			
 
 		}catch(Exception e){
 			log.info("Error occurred in POM classes :"+e);
