@@ -1,0 +1,189 @@
+package wrappers;
+
+import static java.awt.event.KeyEvent.*;
+
+import java.awt.Robot;
+
+public class RobotKeyboard {
+
+    private Robot robot;
+
+    public RobotKeyboard() {
+    	
+    	try{
+    	
+        this.robot = new Robot();
+        
+    	}catch(Exception e){
+    		
+    		e.printStackTrace();
+    		
+    	}
+        
+    }
+
+    public void splitString(CharSequence characters) {
+    	
+    	try{
+    	
+        int length = characters.length();
+        for (int i = 0; i < length; i++) {
+            char character = characters.charAt(i);
+            switchCharValues(character);
+        	}
+        
+    	}catch(Exception e){
+    		
+    		e.printStackTrace();
+    		
+    	}
+        
+    }
+    
+    public void switchCharValues(char character) {
+    	
+    	try{
+    	
+        switch (character) {
+        case 'a': keyboardEvent(VK_A); break;
+        case 'b': keyboardEvent(VK_B); break;
+        case 'c': keyboardEvent(VK_C); break;
+        case 'd': keyboardEvent(VK_D); break;
+        case 'e': keyboardEvent(VK_E); break;
+        case 'f': keyboardEvent(VK_F); break;
+        case 'g': keyboardEvent(VK_G); break;
+        case 'h': keyboardEvent(VK_H); break;
+        case 'i': keyboardEvent(VK_I); break;
+        case 'j': keyboardEvent(VK_J); break;
+        case 'k': keyboardEvent(VK_K); break;
+        case 'l': keyboardEvent(VK_L); break;
+        case 'm': keyboardEvent(VK_M); break;
+        case 'n': keyboardEvent(VK_N); break;
+        case 'o': keyboardEvent(VK_O); break;
+        case 'p': keyboardEvent(VK_P); break;
+        case 'q': keyboardEvent(VK_Q); break;
+        case 'r': keyboardEvent(VK_R); break;
+        case 's': keyboardEvent(VK_S); break;
+        case 't': keyboardEvent(VK_T); break;
+        case 'u': keyboardEvent(VK_U); break;
+        case 'v': keyboardEvent(VK_V); break;
+        case 'w': keyboardEvent(VK_W); break;
+        case 'x': keyboardEvent(VK_X); break;
+        case 'y': keyboardEvent(VK_Y); break;
+        case 'z': keyboardEvent(VK_Z); break;
+        case 'A': keyboardEvent(VK_SHIFT, VK_A); break;
+        case 'B': keyboardEvent(VK_SHIFT, VK_B); break;
+        case 'C': keyboardEvent(VK_SHIFT, VK_C); break;
+        case 'D': keyboardEvent(VK_SHIFT, VK_D); break;
+        case 'E': keyboardEvent(VK_SHIFT, VK_E); break;
+        case 'F': keyboardEvent(VK_SHIFT, VK_F); break;
+        case 'G': keyboardEvent(VK_SHIFT, VK_G); break;
+        case 'H': keyboardEvent(VK_SHIFT, VK_H); break;
+        case 'I': keyboardEvent(VK_SHIFT, VK_I); break;
+        case 'J': keyboardEvent(VK_SHIFT, VK_J); break;
+        case 'K': keyboardEvent(VK_SHIFT, VK_K); break;
+        case 'L': keyboardEvent(VK_SHIFT, VK_L); break;
+        case 'M': keyboardEvent(VK_SHIFT, VK_M); break;
+        case 'N': keyboardEvent(VK_SHIFT, VK_N); break;
+        case 'O': keyboardEvent(VK_SHIFT, VK_O); break;
+        case 'P': keyboardEvent(VK_SHIFT, VK_P); break;
+        case 'Q': keyboardEvent(VK_SHIFT, VK_Q); break;
+        case 'R': keyboardEvent(VK_SHIFT, VK_R); break;
+        case 'S': keyboardEvent(VK_SHIFT, VK_S); break;
+        case 'T': keyboardEvent(VK_SHIFT, VK_T); break;
+        case 'U': keyboardEvent(VK_SHIFT, VK_U); break;
+        case 'V': keyboardEvent(VK_SHIFT, VK_V); break;
+        case 'W': keyboardEvent(VK_SHIFT, VK_W); break;
+        case 'X': keyboardEvent(VK_SHIFT, VK_X); break;
+        case 'Y': keyboardEvent(VK_SHIFT, VK_Y); break;
+        case 'Z': keyboardEvent(VK_SHIFT, VK_Z); break;
+        case '`': keyboardEvent(VK_BACK_QUOTE); break;
+        case '0': keyboardEvent(VK_0); break;
+        case '1': keyboardEvent(VK_1); break;
+        case '2': keyboardEvent(VK_2); break;
+        case '3': keyboardEvent(VK_3); break;
+        case '4': keyboardEvent(VK_4); break;
+        case '5': keyboardEvent(VK_5); break;
+        case '6': keyboardEvent(VK_6); break;
+        case '7': keyboardEvent(VK_7); break;
+        case '8': keyboardEvent(VK_8); break;
+        case '9': keyboardEvent(VK_9); break;
+        case '-': keyboardEvent(VK_MINUS); break;
+        case '=': keyboardEvent(VK_EQUALS); break;
+        case '~': keyboardEvent(VK_SHIFT, VK_BACK_QUOTE); break;
+        case '!': keyboardEvent(VK_SHIFT, VK_1); break;
+        case '@': keyboardEvent(VK_SHIFT, VK_2); break;
+        case '#': keyboardEvent(VK_SHIFT, VK_3); break;
+        case '$': keyboardEvent(VK_SHIFT, VK_4); break;
+        case '%': keyboardEvent(VK_SHIFT, VK_5); break;
+        case '^': keyboardEvent(VK_SHIFT, VK_6); break;
+        case '&': keyboardEvent(VK_SHIFT, VK_7); break;
+        case '*': keyboardEvent(VK_SHIFT, VK_8); break;
+        case '(': keyboardEvent(VK_SHIFT, VK_9); break;
+        case ')': keyboardEvent(VK_SHIFT, VK_0); break;
+        case '_': keyboardEvent(VK_UNDERSCORE); break;
+        case '+': keyboardEvent(VK_PLUS); break;
+        case '\t': keyboardEvent(VK_TAB); break;
+        case '\n': keyboardEvent(VK_ENTER); break;
+        case '[': keyboardEvent(VK_OPEN_BRACKET); break;
+        case ']': keyboardEvent(VK_CLOSE_BRACKET); break;
+        case '\\': keyboardEvent(VK_BACK_SLASH); break;
+        case '{': keyboardEvent(VK_SHIFT, VK_OPEN_BRACKET); break;
+        case '}': keyboardEvent(VK_SHIFT, VK_CLOSE_BRACKET); break;
+        case '|': keyboardEvent(VK_SHIFT, VK_BACK_SLASH); break;
+        case ';': keyboardEvent(VK_SEMICOLON); break;
+        case ':': keyboardEvent(VK_COLON); break;
+        case '\'': keyboardEvent(VK_QUOTE); break;
+        case '"': keyboardEvent(VK_QUOTEDBL); break;
+        case ',': keyboardEvent(VK_COMMA); break;
+        case '<': keyboardEvent(VK_SHIFT, VK_COMMA); break;
+        case '.': keyboardEvent(VK_PERIOD); break;
+        case '>': keyboardEvent(VK_SHIFT, VK_PERIOD); break;
+        case '/': keyboardEvent(VK_SLASH); break;
+        case '?': keyboardEvent(VK_SHIFT, VK_SLASH); break;
+        case ' ': keyboardEvent(VK_SPACE); break;
+        default:
+            throw new IllegalArgumentException("Cannot type character " + character);
+        	
+        	}
+    
+    	}catch(Exception e){
+    		
+    		e.printStackTrace();
+    		
+    	}
+    
+    }
+
+    private void keyboardEvent(int... keyCodes) {
+    	
+    	try{
+    	
+    		keyboardEvent(keyCodes, 0, keyCodes.length);
+        
+    	}catch(Exception e){
+    		
+    		e.printStackTrace();
+    		
+    	}
+    }
+
+    private void keyboardEvent(int[] keyCodes, int offset, int length) {
+    	
+    	try{
+    	
+        if (length == 0) {
+            return;
+        }
+
+        robot.keyPress(keyCodes[offset]);
+        keyboardEvent(keyCodes, offset + 1, length - 1);
+        robot.keyRelease(keyCodes[offset]);
+        
+    	}catch(Exception e){
+    		
+    		e.printStackTrace();
+    	}
+    }
+
+}
