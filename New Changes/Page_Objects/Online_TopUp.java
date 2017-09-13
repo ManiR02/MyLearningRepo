@@ -1,11 +1,25 @@
 package Page_Objects;
 
+import java.io.File;
 import java.util.Hashtable;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
 
 import utils.ReadExcel;
+
 import wrappers.FunctionLibrary;
 
 public class Online_TopUp extends FunctionLibrary{
+
 
 	public synchronized String RetrieveTestDataValue(String filePath,String compName,String strColumnName,String gblrecordsCounter,int strExecEventFlag) throws Exception{
 		String strData=null;
@@ -18,6 +32,20 @@ public class Online_TopUp extends FunctionLibrary{
 
 	public synchronized String Online_TopUp_Page(String locator){
 
+		String multiLanguageExcelPath = System.getProperty("user.dir")+property.getProperty("resourceMgmtfilekeyPath");
+
+		String languageName = property.getProperty("Language_Required");
+		
+		ReadExcel excel=new ReadExcel(multiLanguageExcelPath);
+		
+		String[] xpathsplittext = null;
+		String resourceFileName = null;
+		String filePathLocation = null;
+		NodeList nodeList=null;
+		String Resxfilevalue = null;
+		String[] SplitResxfilevalue = null;
+		String finalresxfilevalue = null;
+		
 		try{
 			Hashtable<String, String> hs = new Hashtable<String, String>();
 			hs.put("services_Select", "id#loadType");
@@ -49,9 +77,12 @@ public class Online_TopUp extends FunctionLibrary{
 			hs.put("ExCCNo_Label", "id#existCard_cvvNumber");
 			hs.put("MenuLoading_Icon", "xpath#//span[@class='col-md-offset-0 glyphicon-rotate']");
 			hs.put("PaymentAmount_Label", "id#txtpaymentAmount");
+			hs.put("taxAmountLabel", "id#txttaxamount");
 			hs.put("TaxId_Label", "id#txtTaxId");
 			hs.put("VATAmount_Label", "id#txtvatamount");
 			hs.put("TotalPayAmount_Label", "id#txtTotalPayAmount");
+			hs.put("confirmTaxAmt", "id#lblTaxAmt");
+			hs.put("confirmVatAmt", "id#lblVatAmt");
 			hs.put("cardType_Dropdown", "id#cardType");
 			hs.put("cardName_TextBox", "id#txtNameOncard");
 			hs.put("cardNumber1_TextBox", "id#paymentCRM_cardNumber1");
@@ -63,8 +94,8 @@ public class Online_TopUp extends FunctionLibrary{
 			hs.put("postcode_TextBox", "id#postCode");
 			hs.put("loadAddress_Icon", "xpath#//span[@class='glyphicon-rotate col-md-12 text-center']");
 			hs.put("searchIcon_Button", "xpath#//span[@class='glyphicon glyphicon-search']");
-			hs.put("addressList_TextBox", "id#lstAddressResult");
-			hs.put("OKIcon_Button", "xpath#//span[@class='glyphicon glyphicon-ok']");
+			hs.put("addressList_TextBox", "xpath#//select[@id='lstAddressResult']");
+			hs.put("OKIcon_Button", "xpath#//a[@id='btnAcceptAddress']/span");
 			hs.put("purchase_Button", "id#purchase");
 			hs.put("reset_Button", "id#btnCardReset");
 			hs.put("okBtn_Button", "id#btnOK");
@@ -81,16 +112,190 @@ public class Online_TopUp extends FunctionLibrary{
 			hs.put("cityName_Textbox", "id#cityName");
 			hs.put("apartmentNo_Textbox", "id#apartmentNo");
 			hs.put("houseNo_Textbox", "id#houseNumber");
-			hs.put("NOAddressPopup_Label", "xpath#//div[contains(text(), 'No records found, Please enter')]");
-			hs.put("close_button", "xpath#//li[@title='Subscriber Logout']");
-			hs.put("UpdateSuccessMessage", "xpath#.//label[contains(text(),'Updated Successfully')]");
+			hs.put("NOAddressPopup_Label", "xpath#//div[contains(text(), 'ErrorResources>>InvalidPostcodeAlertmsg')]");
+			hs.put("close_button", "xpath#//div[@class='close-icon close-view-icon']");
+			hs.put("UpdateSuccessMessage", "xpath#.//label[contains(text(),'SubscriberResources>>PrePostSucess')]");
 			hs.put("ExistingCVVNumber", "id#existCard_cvvNumber");
 			hs.put("BalanceLimitdpdwn", "id#txtcardBalanceLimit");
 			hs.put("txtcardtopupAmount", "id#txtcardtopupAmount");
 			hs.put("txtcardLimitTopupAmt", "id#txtcardLimitTopupAmt");
 			hs.put("txtcardAutoDays", "id#txtcardAutoDays");
 			hs.put("isAutotopupLink", "xpath#.//*[@id='divcheckboxautorecharge']//i");
-			return hs.get(locator);
+			
+			
+			String xpathValue = hs.get(locator);
+			
+			if(xpathValue.contains(">>")) {
+				
+
+			if(xpathValue.contains("text()=")){
+			
+				System.out.println("text()");	
+					
+				Pattern pattern = Pattern.compile("xpath(.*)text(.*)='([\\sa-zA-Z>]+)']");
+				
+				Matcher matcher = pattern.matcher(xpathValue);
+				
+				while(matcher.find()){
+					
+					String splittedXpath = matcher.group(3);					
+					
+					System.out.println("splittedXpath3 :"+splittedXpath);
+					
+					xpathsplittext = splittedXpath.split(">>");
+					
+					resourceFileName = xpathsplittext[0] + excel.RetrieveAutomationKeyFromExcel("Extension_Language", "Resx_Extension", languageName);
+					
+					filePathLocation=property.getProperty("resourcesFilePath_GBR");
+					String resourceFileToGetValue=filePathLocation+"\\"+resourceFileName;
+					log.info("File path is "+resourceFileToGetValue);
+					File file=new File("//\\"+resourceFileToGetValue);
+
+					String commonAttribute=property.getProperty("attributeCommonValue");
+					String fullAttributewithName=commonAttribute+"[@name='"+ xpathsplittext[1] +"']/value";
+					log.info("Attribute to Retrieve Node value is : "+fullAttributewithName);
+
+					DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
+					DocumentBuilder builder=factory.newDocumentBuilder();
+					Document document=builder.parse(file);
+					document.getDocumentElement().normalize();
+					XPath xpath=XPathFactory.newInstance().newXPath();
+					nodeList=(NodeList)xpath.compile(fullAttributewithName).evaluate(document,XPathConstants.NODESET);
+
+					Resxfilevalue = nodeList.item(0).getTextContent();
+					
+					if(Resxfilevalue.contains("'")){
+						SplitResxfilevalue = Resxfilevalue.split("'");
+						
+						for(int m = 1; m <= SplitResxfilevalue.length -1; m++){
+							if(m < 2){
+								finalresxfilevalue = SplitResxfilevalue[m-1] +"',\"'\",'"+ SplitResxfilevalue[m];
+							} else{
+								finalresxfilevalue = finalresxfilevalue + "',\"'\",'"+ SplitResxfilevalue[m];
+							}
+						}
+						
+						xpathValue =  xpathValue.replaceAll("'"+ splittedXpath +"'", "concat('"+ finalresxfilevalue +"')");
+					} else{
+						xpathValue = xpathValue.replaceAll(splittedXpath, Resxfilevalue);
+					}
+					
+				
+					} 
+				
+			} else if(xpathValue.contains("contains(text()")){
+				
+				System.out.println("contains(text()");
+				
+				Pattern pattern = Pattern.compile("(.*)contains(.*)text(.*),.*'(.*)'");
+				
+				Matcher matcher = pattern.matcher(xpathValue);
+				
+				while(matcher.find()){
+					
+					String splittedXpath = matcher.group(4);
+					
+					System.out.println("splittedXpath :"+splittedXpath);
+					
+					xpathsplittext = splittedXpath.split(">>");
+					
+					resourceFileName = xpathsplittext[0] + excel.RetrieveAutomationKeyFromExcel("Extension_Language", "Resx_Extension", languageName);
+					
+					filePathLocation=property.getProperty("resourcesFilePath_GBR");
+					String resourceFileToGetValue=filePathLocation+"\\"+resourceFileName;
+					log.info("File path is "+resourceFileToGetValue);
+					File file=new File("//\\"+resourceFileToGetValue);
+
+					String commonAttribute=property.getProperty("attributeCommonValue");
+					String fullAttributewithName=commonAttribute+"[@name='"+ xpathsplittext[1] +"']/value";
+					log.info("Attribute to Retrieve Node value is : "+fullAttributewithName);
+
+					DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
+					DocumentBuilder builder=factory.newDocumentBuilder();
+					Document document=builder.parse(file);
+					document.getDocumentElement().normalize();
+					XPath xpath=XPathFactory.newInstance().newXPath();
+					nodeList=(NodeList)xpath.compile(fullAttributewithName).evaluate(document,XPathConstants.NODESET);
+
+					Resxfilevalue = nodeList.item(0).getTextContent();
+					
+					if(Resxfilevalue.contains("'")){
+						SplitResxfilevalue = Resxfilevalue.split("'");
+						
+						for(int m = 1; m <= SplitResxfilevalue.length -1; m++){
+							if(m < 2){
+								finalresxfilevalue = SplitResxfilevalue[m-1] +"',\"'\",'"+ SplitResxfilevalue[m];
+							} else{
+								finalresxfilevalue = finalresxfilevalue + "',\"'\",'"+ SplitResxfilevalue[m];
+							}
+						}
+						
+						xpathValue =  xpathValue.replaceAll("'"+ splittedXpath +"'", "concat('"+ finalresxfilevalue +"')");
+					} else{
+						xpathValue = xpathValue.replaceAll(splittedXpath, Resxfilevalue);
+					}
+					
+		
+					}
+				
+				} else if(xpathValue.contains("title=")){
+					
+					System.out.println("title()");	
+						
+					Pattern pattern = Pattern.compile("xpath(.*)title(.*)='([\\sa-zA-Z>]+)']");
+					
+					Matcher matcher = pattern.matcher(xpathValue);
+					
+					while(matcher.find()){
+						
+						String splittedXpath = matcher.group(3);					
+						
+						System.out.println("splittedXpath3 :"+splittedXpath);
+						
+						xpathsplittext = splittedXpath.split(">>");
+						
+						resourceFileName = xpathsplittext[0] + excel.RetrieveAutomationKeyFromExcel("Extension_Language", "Resx_Extension", languageName);
+						
+						filePathLocation=property.getProperty("resourcesFilePath_GBR");
+						String resourceFileToGetValue=filePathLocation+"\\"+resourceFileName;
+						log.info("File path is "+resourceFileToGetValue);
+						File file=new File("//\\"+resourceFileToGetValue);
+
+						String commonAttribute=property.getProperty("attributeCommonValue");
+						String fullAttributewithName=commonAttribute+"[@name='"+ xpathsplittext[1] +"']/value";
+						log.info("Attribute to Retrieve Node value is : "+fullAttributewithName);
+
+						DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
+						DocumentBuilder builder=factory.newDocumentBuilder();
+						Document document=builder.parse(file);
+						document.getDocumentElement().normalize();
+						XPath xpath=XPathFactory.newInstance().newXPath();
+						nodeList=(NodeList)xpath.compile(fullAttributewithName).evaluate(document,XPathConstants.NODESET);
+
+						Resxfilevalue = nodeList.item(0).getTextContent();
+						
+						if(Resxfilevalue.contains("'")){
+							SplitResxfilevalue = Resxfilevalue.split("'");
+							
+							for(int m = 1; m <= SplitResxfilevalue.length -1; m++){
+								if(m < 2){
+									finalresxfilevalue = SplitResxfilevalue[m-1] +"',\"'\",'"+ SplitResxfilevalue[m];
+								} else{
+									finalresxfilevalue = finalresxfilevalue + "',\"'\",'"+ SplitResxfilevalue[m];
+								}
+							}
+							
+							xpathValue =  xpathValue.replaceAll("'"+ splittedXpath +"'", "concat('"+ finalresxfilevalue +"')");
+						} else{
+							xpathValue = xpathValue.replaceAll(splittedXpath, Resxfilevalue);
+						}
+
+						} 
+					
+				}
+			}
+		return xpathValue;
+		
 		}catch(Exception e){
 			log.info("Error occurred in POM classes :"+e);
 			return null;
@@ -114,6 +319,20 @@ public class Online_TopUp extends FunctionLibrary{
 
 	public synchronized String Auto_TopUp_Page(String locator){
 
+		String multiLanguageExcelPath = System.getProperty("user.dir")+property.getProperty("resourceMgmtfilekeyPath");
+
+		String languageName = property.getProperty("Language_Required");
+		
+		ReadExcel excel=new ReadExcel(multiLanguageExcelPath);
+		
+		String[] xpathsplittext = null;
+		String resourceFileName = null;
+		String filePathLocation = null;
+		NodeList nodeList=null;
+		String Resxfilevalue = null;
+		String[] SplitResxfilevalue = null;
+		String finalresxfilevalue = null;
+		
 		try{
 			Hashtable<String, String> hs = new Hashtable<String, String>();
 			hs.put("services_Select", "id#loadType");
@@ -124,7 +343,7 @@ public class Online_TopUp extends FunctionLibrary{
 			hs.put("Auto_TopUp_Image", "xpath#//div[@class='card-topup-thumbnail']//div[@title='Auto Topup']/following-sibling::div[@class]");
 			hs.put("MenuLoading_Icon", "xpath#//span[@class='col-md-offset-0 glyphicon-rotate']");
 			hs.put("BalanceLimit_Dropdown", "id#txtBalanceLimit");
-			hs.put("IsAutoTopup_Select", "id#isautotopup");
+			hs.put("IsAutoTopup_Select", "xpath#//form[@id='AutoTopupValid']//label[@class='i-switch bg-success']/input[@id='isautotopup']");
 			hs.put("IsAutoTopup_Select_New", "isautotopup");
 			hs.put("ATopupAmount_Dropdown", "id#txtTopupamount");
 			hs.put("MaxLimit_Dropdown", "id#txtMaxlimit");
@@ -134,9 +353,182 @@ public class Online_TopUp extends FunctionLibrary{
 			hs.put("Refresh_Button", "id#btnRefresh");
 			hs.put("ATopupMessage_Label", "id#bAutoTopupsMessage");
 			hs.put("ResponseMessage_Label", "xpath#//span[@id='bAutoTopupsMessage']");
-			hs.put("Response_message", "xpath#//span[contains(text(), 'Success')]");
-			hs.put("close_button", "xpath#//li[@title='Subscriber Logout']");
-			return hs.get(locator);
+			hs.put("Response_message", "xpath#//span[contains(text(), 'SubscriberResources>>Success')]");
+			hs.put("close_button", "xpath#//div[@class='close-icon close-view-icon']");
+			
+			String xpathValue = hs.get(locator);
+			
+			if(xpathValue.contains(">>")) {
+				
+
+				if(xpathValue.contains("text()=")){
+				
+					System.out.println("text()");	
+						
+					Pattern pattern = Pattern.compile("xpath(.*)text(.*)='([\\sa-zA-Z>]+)']");
+					
+					Matcher matcher = pattern.matcher(xpathValue);
+					
+					while(matcher.find()){
+						
+						String splittedXpath = matcher.group(3);					
+						
+						System.out.println("splittedXpath3 :"+splittedXpath);
+						
+						xpathsplittext = splittedXpath.split(">>");
+						
+						resourceFileName = xpathsplittext[0] + excel.RetrieveAutomationKeyFromExcel("Extension_Language", "Resx_Extension", languageName);
+						
+						filePathLocation=property.getProperty("resourcesFilePath_GBR");
+						String resourceFileToGetValue=filePathLocation+"\\"+resourceFileName;
+						log.info("File path is "+resourceFileToGetValue);
+						File file=new File("//\\"+resourceFileToGetValue);
+	
+						String commonAttribute=property.getProperty("attributeCommonValue");
+						String fullAttributewithName=commonAttribute+"[@name='"+ xpathsplittext[1] +"']/value";
+						log.info("Attribute to Retrieve Node value is : "+fullAttributewithName);
+	
+						DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
+						DocumentBuilder builder=factory.newDocumentBuilder();
+						Document document=builder.parse(file);
+						document.getDocumentElement().normalize();
+						XPath xpath=XPathFactory.newInstance().newXPath();
+						nodeList=(NodeList)xpath.compile(fullAttributewithName).evaluate(document,XPathConstants.NODESET);
+	
+						Resxfilevalue = nodeList.item(0).getTextContent();
+						
+						if(Resxfilevalue.contains("'")){
+							SplitResxfilevalue = Resxfilevalue.split("'");
+							
+							for(int m = 1; m <= SplitResxfilevalue.length -1; m++){
+								if(m < 2){
+									finalresxfilevalue = SplitResxfilevalue[m-1] +"',\"'\",'"+ SplitResxfilevalue[m];
+								} else{
+									finalresxfilevalue = finalresxfilevalue + "',\"'\",'"+ SplitResxfilevalue[m];
+								}
+							}
+							
+							xpathValue =  xpathValue.replaceAll("'"+ splittedXpath +"'", "concat('"+ finalresxfilevalue +"')");
+						} else{
+							xpathValue = xpathValue.replaceAll(splittedXpath, Resxfilevalue);
+						}
+						
+					
+						} 
+					
+				} else if(xpathValue.contains("contains(text()")){
+					
+					System.out.println("contains(text()");
+					
+					Pattern pattern = Pattern.compile("(.*)contains(.*)text(.*),.*'(.*)'");
+					
+					Matcher matcher = pattern.matcher(xpathValue);
+					
+					while(matcher.find()){
+						
+						String splittedXpath = matcher.group(4);
+						
+						System.out.println("splittedXpath :"+splittedXpath);
+						
+						xpathsplittext = splittedXpath.split(">>");
+						
+						resourceFileName = xpathsplittext[0] + excel.RetrieveAutomationKeyFromExcel("Extension_Language", "Resx_Extension", languageName);
+						
+						filePathLocation=property.getProperty("resourcesFilePath_GBR");
+						String resourceFileToGetValue=filePathLocation+"\\"+resourceFileName;
+						log.info("File path is "+resourceFileToGetValue);
+						File file=new File("//\\"+resourceFileToGetValue);
+	
+						String commonAttribute=property.getProperty("attributeCommonValue");
+						String fullAttributewithName=commonAttribute+"[@name='"+ xpathsplittext[1] +"']/value";
+						log.info("Attribute to Retrieve Node value is : "+fullAttributewithName);
+	
+						DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
+						DocumentBuilder builder=factory.newDocumentBuilder();
+						Document document=builder.parse(file);
+						document.getDocumentElement().normalize();
+						XPath xpath=XPathFactory.newInstance().newXPath();
+						nodeList=(NodeList)xpath.compile(fullAttributewithName).evaluate(document,XPathConstants.NODESET);
+	
+						Resxfilevalue = nodeList.item(0).getTextContent();
+						
+						if(Resxfilevalue.contains("'")){
+							SplitResxfilevalue = Resxfilevalue.split("'");
+							
+							for(int m = 1; m <= SplitResxfilevalue.length -1; m++){
+								if(m < 2){
+									finalresxfilevalue = SplitResxfilevalue[m-1] +"',\"'\",'"+ SplitResxfilevalue[m];
+								} else{
+									finalresxfilevalue = finalresxfilevalue + "',\"'\",'"+ SplitResxfilevalue[m];
+								}
+							}
+							
+							xpathValue =  xpathValue.replaceAll("'"+ splittedXpath +"'", "concat('"+ finalresxfilevalue +"')");
+						} else{
+							xpathValue = xpathValue.replaceAll(splittedXpath, Resxfilevalue);
+						}
+						
+			
+						}
+					
+					} else if(xpathValue.contains("title=")){
+						
+						System.out.println("title()");	
+							
+						Pattern pattern = Pattern.compile("xpath(.*)title(.*)='([\\sa-zA-Z>]+)']");
+						
+						Matcher matcher = pattern.matcher(xpathValue);
+						
+						while(matcher.find()){
+							
+							String splittedXpath = matcher.group(3);					
+							
+							System.out.println("splittedXpath3 :"+splittedXpath);
+							
+							xpathsplittext = splittedXpath.split(">>");
+							
+							resourceFileName = xpathsplittext[0] + excel.RetrieveAutomationKeyFromExcel("Extension_Language", "Resx_Extension", languageName);
+							
+							filePathLocation=property.getProperty("resourcesFilePath_GBR");
+							String resourceFileToGetValue=filePathLocation+"\\"+resourceFileName;
+							log.info("File path is "+resourceFileToGetValue);
+							File file=new File("//\\"+resourceFileToGetValue);
+	
+							String commonAttribute=property.getProperty("attributeCommonValue");
+							String fullAttributewithName=commonAttribute+"[@name='"+ xpathsplittext[1] +"']/value";
+							log.info("Attribute to Retrieve Node value is : "+fullAttributewithName);
+	
+							DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
+							DocumentBuilder builder=factory.newDocumentBuilder();
+							Document document=builder.parse(file);
+							document.getDocumentElement().normalize();
+							XPath xpath=XPathFactory.newInstance().newXPath();
+							nodeList=(NodeList)xpath.compile(fullAttributewithName).evaluate(document,XPathConstants.NODESET);
+	
+							Resxfilevalue = nodeList.item(0).getTextContent();
+							
+							if(Resxfilevalue.contains("'")){
+								SplitResxfilevalue = Resxfilevalue.split("'");
+								
+								for(int m = 1; m <= SplitResxfilevalue.length -1; m++){
+									if(m < 2){
+										finalresxfilevalue = SplitResxfilevalue[m-1] +"',\"'\",'"+ SplitResxfilevalue[m];
+									} else{
+										finalresxfilevalue = finalresxfilevalue + "',\"'\",'"+ SplitResxfilevalue[m];
+									}
+								}
+								
+								xpathValue =  xpathValue.replaceAll("'"+ splittedXpath +"'", "concat('"+ finalresxfilevalue +"')");
+							} else{
+								xpathValue = xpathValue.replaceAll(splittedXpath, Resxfilevalue);
+							}
+	
+							} 
+						
+					}
+			}
+		return xpathValue;
+		
 		}catch(Exception e){
 			log.info("Error occurred in POM classes :"+e);
 			return null;
@@ -146,6 +538,20 @@ public class Online_TopUp extends FunctionLibrary{
 
 	public synchronized String AllInOne_TopUp_Page(String locator){
 
+		String multiLanguageExcelPath = System.getProperty("user.dir")+property.getProperty("resourceMgmtfilekeyPath");
+
+		String languageName = property.getProperty("Language_Required");
+		
+		ReadExcel excel=new ReadExcel(multiLanguageExcelPath);
+		
+		String[] xpathsplittext = null;
+		String resourceFileName = null;
+		String filePathLocation = null;
+		NodeList nodeList=null;
+		String Resxfilevalue = null;
+		String[] SplitResxfilevalue = null;
+		String finalresxfilevalue = null;
+		
 		try{
 			Hashtable<String, String> hs = new Hashtable<String, String>();
 			hs.put("services_Select", "id#loadType");
@@ -161,7 +567,7 @@ public class Online_TopUp extends FunctionLibrary{
 			hs.put("lstBundleNo", "id#ddlBundleTypes");
 			hs.put("lstNoOfMonths", "id#ddNoOfMonths");
 			hs.put("btnplanSubmit", "id#btnAllinOneBundle");
-			hs.put("lblHeaderbundlecategory", "xpath#//div[contains(text(),'Bundle Category')]");
+			hs.put("lblHeaderbundlecategory", "xpath#//div[contains(text(),'TopupResources>>BundleCategory')]");
 			hs.put("lblbundlecategory", "id#lblbundlecategory");
 			hs.put("lblbundleDescription", "id#lblbundleDescription");
 			hs.put("chkAllinoneAutorenewal", "id#chkAllinoneAutorenewal");
@@ -179,7 +585,7 @@ public class Online_TopUp extends FunctionLibrary{
 			hs.put("tdNoofMonths_1", "xpath#//tbody[@id='tbAllInOneBbundles']//tr[1]//td[5]");
 			hs.put("tdOriginalPrice_1", "xpath#//tbody[@id='tbAllInOneBbundles']//tr[1]//td[6]");
 			hs.put("tdDiscountPrice_1", "xpath#//tbody[@id='tbAllInOneBbundles']//tr[1]//td[7]");
-			hs.put("tdtrashIcon_1", "xpath#//tbody[@id='tbAllInOneBbundles']//tr[1]//td[8]//p[@class='glyphicon glyphicon-trash']");
+			hs.put("tdtrashIcon_1", "xpath#//tbody[@id='tbAllInOneBbundles']//tr[1]//td[27]//p[@class='glyphicon glyphicon-trash']");
 			hs.put("tdType_2", "xpath#//tbody[@id='tbAllInOneBbundles']//tr[2]//td[1]");
 			hs.put("tdSimPlan_2", "xpath#//tbody[@id='tbAllInOneBbundles']//tr[2]//td[2]");
 			hs.put("tdBundleType_2", "xpath#//tbody[@id='tbAllInOneBbundles']//tr[2]//td[3]");
@@ -187,7 +593,7 @@ public class Online_TopUp extends FunctionLibrary{
 			hs.put("tdNoofMonths_2", "xpath#//tbody[@id='tbAllInOneBbundles']//tr[2]//td[5]");
 			hs.put("tdOriginalPrice_2", "xpath#//tbody[@id='tbAllInOneBbundles']//tr[2]//td[6]");
 			hs.put("tdDiscountPrice_2", "xpath#//tbody[@id='tbAllInOneBbundles']//tr[2]//td[7]");
-			hs.put("tdtrashIcon_2", "xpath#//tbody[@id='tbAllInOneBbundles']//tr[2]//td[8]//p[@class='glyphicon glyphicon-trash']");
+			hs.put("tdtrashIcon_2", "xpath#//tbody[@id='tbAllInOneBbundles']//tr[2]//td[27]//p[@class='glyphicon glyphicon-trash']");
 			hs.put("tdSubmitType_1", "xpath#//tbody[@id='tbcheckAllInOneBbundles']//tr[1]//td[1]");
 			hs.put("tdSubmitSimPlan_1", "xpath#//tbody[@id='tbcheckAllInOneBbundles']//tr[1]//td[2]");
 			hs.put("tdSubmitBundleType_1", "xpath#//tbody[@id='tbcheckAllInOneBbundles']//tr[1]//td[3]");
@@ -208,8 +614,8 @@ public class Online_TopUp extends FunctionLibrary{
 			hs.put("txtEmail", "id#Email");
 			hs.put("txtpostCode", "id#postCode");
 			hs.put("lblCountry", "xpath#//div[@id='countryName']//strong");
-			hs.put("iconSelectAddress", "xpath#//span[@class='glyphicon glyphicon-ok']	");
-			hs.put("iconAddressSearch", "xpath#//span[@class='glyphicon glyphicon-search']	");
+			hs.put("iconSelectAddress", "xpath#//a[@id='btnAcceptAddress']/span");
+			hs.put("iconAddressSearch", "xpath#//span[@class='glyphicon glyphicon-search']");
 			hs.put("labelstreetName", "id#streetName");
 			hs.put("lblcityName", "id#cityName");
 			hs.put("lblpostCode", "id#postCode");
@@ -325,8 +731,225 @@ public class Online_TopUp extends FunctionLibrary{
 			hs.put("lblAllinoneTaxAmount", "id#lblAllinoneTaxAmount");
 			hs.put("lblAllinonefinalTaxAmount", "id#lblAllinonefinalTaxAmount");
 			hs.put("lblAllinoneVatTotalAmt2", "xpath#//label[@id='lblAllinoneVatTotalAmt' and contains(@style,'bold')]");
-			hs.put("close_button", "xpath#//li[@title='Subscriber Logout']");
-			return hs.get(locator);
+			hs.put("close_button", "xpath#//div[@class='close-icon close-view-icon']");
+			
+			//WiFi Address
+			hs.put("wifiAddress1", "xpath#//input[@id='wifiAddress1']");
+			hs.put("wifiAddress2", "xpath#//input[@id='wifiAddress2']");
+			hs.put("wifiCity", "xpath#//input[@id='wifiCity']");
+			hs.put("wifiState", "xpath#//input[@id='wifiState']");
+			hs.put("wifiPostCode", "xpath#//input[@id='wifiPostCode']");
+			hs.put("wifiSubmit", "id#btnWifiSubmit");
+			hs.put("wifiMsg", "id#wifiMsg");
+			hs.put("wifiCancelbtn", "id#btnWifiCancel");
+			
+			hs.put("wifiGridTable", "id#tblAllInOneBundles");
+			hs.put("wifiType", "xpath#//tbody[@id='tbAllInOneBbundles']//tr//td[1]");
+			hs.put("wifiSimPlan", "xpath#//tbody[@id='tbAllInOneBbundles']//tr//td[2]");
+			hs.put("wifiBundleType", "xpath#//tbody[@id='tbAllInOneBbundles']//tr//td[3]");
+			hs.put("wifiRenewal", "xpath#//tbody[@id='tbAllInOneBbundles']//tr//td[4]");
+			hs.put("wifiNoOfMon", "xpath#//tbody[@id='tbAllInOneBbundles']//tr//td[5]");
+			hs.put("wifiOrgPrice", "xpath#//tbody[@id='tbAllInOneBbundles']//tr//td[6]");
+			hs.put("wifiDisPrice", "xpath#//tbody[@id='tbAllInOneBbundles']//tr//td[7]");
+			hs.put("wifiHighManField", "xpath#//label[@id='btnAllInOne' and contains(@class, 'false')]");
+			
+			hs.put("addressAccept", "xpath#//a[@id='btnAcceptAddress']/span");
+			
+			hs.put("valWifiAddress1", "id#wifiAddress1");
+			hs.put("valWifiAddress2", "id#wifiAddress2");
+			hs.put("valWifiCity", "id#wifiCity");
+			hs.put("valWifiState", "id#wifiState");
+			hs.put("valWifiPostCode", "id#wifiPostCode");
+			
+			
+			hs.put("wifiConfirmTable", "xpath#//tr[@id='trregulartax']/parent::thead/following-sibling::tbody//tr");
+			hs.put("wifiConfirmType", "xpath#//tr[@id='trregulartax']/parent::thead/following-sibling::tbody//tr//td[1]");
+			hs.put("wifiConfirmSimPlan", "xpath#//tr[@id='trregulartax']/parent::thead/following-sibling::tbody//tr//td[2]");
+			hs.put("wifiConfirmBundleType", "xpath#//tr[@id='trregulartax']/parent::thead/following-sibling::tbody//tr//td[3]");
+			hs.put("wifiConfirmRenewal", "xpath#//tr[@id='trregulartax']/parent::thead/following-sibling::tbody//tr//td[4]");
+			hs.put("wifiConfirmNoOfMon", "xpath#//tr[@id='trregulartax']/parent::thead/following-sibling::tbody//tr//td[5]");
+			hs.put("wifiConfirmOrgPrice", "xpath#//tr[@id='trregulartax']/parent::thead/following-sibling::tbody//tr//td[6]");
+			hs.put("wifiConfirmDisPrice", "xpath#//tr[@id='trregulartax']/parent::thead/following-sibling::tbody//tr//td[7]");
+			
+			
+			hs.put("existCCMsg", "xpath#//div[@class='col-md-12 text-center errorMessage']");
+			
+			String xpathValue = hs.get(locator);
+			
+			if(xpathValue.contains(">>")) {
+			
+				if(xpathValue.contains("text()=")){
+			
+				System.out.println("text()");	
+					
+				Pattern pattern = Pattern.compile("xpath(.*)text(.*)='([\\sa-zA-Z>]+)']");
+				
+				Matcher matcher = pattern.matcher(xpathValue);
+				
+				while(matcher.find()){
+					
+					String splittedXpath = matcher.group(3);					
+					
+					System.out.println("splittedXpath3 :"+splittedXpath);
+					
+					xpathsplittext = splittedXpath.split(">>");
+					
+					resourceFileName = xpathsplittext[0] + excel.RetrieveAutomationKeyFromExcel("Extension_Language", "Resx_Extension", languageName);
+					
+					filePathLocation=property.getProperty("resourcesFilePath_GBR");
+					String resourceFileToGetValue=filePathLocation+"\\"+resourceFileName;
+					log.info("File path is "+resourceFileToGetValue);
+					File file=new File("//\\"+resourceFileToGetValue);
+
+					String commonAttribute=property.getProperty("attributeCommonValue");
+					String fullAttributewithName=commonAttribute+"[@name='"+ xpathsplittext[1] +"']/value";
+					log.info("Attribute to Retrieve Node value is : "+fullAttributewithName);
+
+					DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
+					DocumentBuilder builder=factory.newDocumentBuilder();
+					Document document=builder.parse(file);
+					document.getDocumentElement().normalize();
+					XPath xpath=XPathFactory.newInstance().newXPath();
+					nodeList=(NodeList)xpath.compile(fullAttributewithName).evaluate(document,XPathConstants.NODESET);
+
+					Resxfilevalue = nodeList.item(0).getTextContent();
+					
+					if(Resxfilevalue.contains("'")){
+						SplitResxfilevalue = Resxfilevalue.split("'");
+						
+						for(int m = 1; m <= SplitResxfilevalue.length -1; m++){
+							if(m < 2){
+								finalresxfilevalue = SplitResxfilevalue[m-1] +"',\"'\",'"+ SplitResxfilevalue[m];
+							} else{
+								finalresxfilevalue = finalresxfilevalue + "',\"'\",'"+ SplitResxfilevalue[m];
+							}
+						}
+						
+						xpathValue =  xpathValue.replaceAll("'"+ splittedXpath +"'", "concat('"+ finalresxfilevalue +"')");
+					} else{
+						xpathValue = xpathValue.replaceAll(splittedXpath, Resxfilevalue);
+					}
+					
+				
+					} 
+				
+			} else if(xpathValue.contains("contains(text()")){
+				
+				System.out.println("contains(text()");
+				
+				Pattern pattern = Pattern.compile("(.*)contains(.*)text(.*),.*'(.*)'");
+				
+				Matcher matcher = pattern.matcher(xpathValue);
+				
+				while(matcher.find()){
+					
+					String splittedXpath = matcher.group(4);
+					
+					System.out.println("splittedXpath :"+splittedXpath);
+					
+					xpathsplittext = splittedXpath.split(">>");
+					
+					resourceFileName = xpathsplittext[0] + excel.RetrieveAutomationKeyFromExcel("Extension_Language", "Resx_Extension", languageName);
+					
+					filePathLocation=property.getProperty("resourcesFilePath_GBR");
+					String resourceFileToGetValue=filePathLocation+"\\"+resourceFileName;
+					log.info("File path is "+resourceFileToGetValue);
+					File file=new File("//\\"+resourceFileToGetValue);
+
+					String commonAttribute=property.getProperty("attributeCommonValue");
+					String fullAttributewithName=commonAttribute+"[@name='"+ xpathsplittext[1] +"']/value";
+					log.info("Attribute to Retrieve Node value is : "+fullAttributewithName);
+
+					DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
+					DocumentBuilder builder=factory.newDocumentBuilder();
+					Document document=builder.parse(file);
+					document.getDocumentElement().normalize();
+					XPath xpath=XPathFactory.newInstance().newXPath();
+					nodeList=(NodeList)xpath.compile(fullAttributewithName).evaluate(document,XPathConstants.NODESET);
+
+					Resxfilevalue = nodeList.item(0).getTextContent();
+					
+					if(Resxfilevalue.contains("'")){
+						SplitResxfilevalue = Resxfilevalue.split("'");
+						
+						for(int m = 1; m <= SplitResxfilevalue.length -1; m++){
+							if(m < 2){
+								finalresxfilevalue = SplitResxfilevalue[m-1] +"',\"'\",'"+ SplitResxfilevalue[m];
+							} else{
+								finalresxfilevalue = finalresxfilevalue + "',\"'\",'"+ SplitResxfilevalue[m];
+							}
+						}
+						
+						xpathValue =  xpathValue.replaceAll("'"+ splittedXpath +"'", "concat('"+ finalresxfilevalue +"')");
+					} else{
+						xpathValue = xpathValue.replaceAll(splittedXpath, Resxfilevalue);
+					}
+					
+		
+					}
+				
+				} else if(xpathValue.contains("title=")){
+					
+					System.out.println("title()");	
+						
+					Pattern pattern = Pattern.compile("xpath(.*)title(.*)='([\\sa-zA-Z>]+)']");
+					
+					Matcher matcher = pattern.matcher(xpathValue);
+					
+					while(matcher.find()){
+						
+						String splittedXpath = matcher.group(3);					
+						
+						System.out.println("splittedXpath3 :"+splittedXpath);
+						
+						if(splittedXpath.contains(">>")){
+							
+
+							xpathsplittext = splittedXpath.split(">>");
+							
+							resourceFileName = xpathsplittext[0] + excel.RetrieveAutomationKeyFromExcel("Extension_Language", "Resx_Extension", languageName);
+							
+							filePathLocation=property.getProperty("resourcesFilePath_GBR");
+							String resourceFileToGetValue=filePathLocation+"\\"+resourceFileName;
+							log.info("File path is "+resourceFileToGetValue);
+							File file=new File("//\\"+resourceFileToGetValue);
+	
+							String commonAttribute=property.getProperty("attributeCommonValue");
+							String fullAttributewithName=commonAttribute+"[@name='"+ xpathsplittext[1] +"']/value";
+							log.info("Attribute to Retrieve Node value is : "+fullAttributewithName);
+	
+							DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
+							DocumentBuilder builder=factory.newDocumentBuilder();
+							Document document=builder.parse(file);
+							document.getDocumentElement().normalize();
+							XPath xpath=XPathFactory.newInstance().newXPath();
+							nodeList=(NodeList)xpath.compile(fullAttributewithName).evaluate(document,XPathConstants.NODESET);
+	
+							Resxfilevalue = nodeList.item(0).getTextContent();
+							
+							if(Resxfilevalue.contains("'")){
+								SplitResxfilevalue = Resxfilevalue.split("'");
+								
+								for(int m = 1; m <= SplitResxfilevalue.length -1; m++){
+									if(m < 2){
+										finalresxfilevalue = SplitResxfilevalue[m-1] +"',\"'\",'"+ SplitResxfilevalue[m];
+									} else{
+										finalresxfilevalue = finalresxfilevalue + "',\"'\",'"+ SplitResxfilevalue[m];
+									}
+								}
+								
+								xpathValue =  xpathValue.replaceAll("'"+ splittedXpath +"'", "concat('"+ finalresxfilevalue +"')");
+							} else{
+								xpathValue = xpathValue.replaceAll(splittedXpath, Resxfilevalue);
+							}
+
+						} 
+					}
+				}
+			}
+		return xpathValue;
+		
+		
 		}catch(Exception e){
 			log.info("Error occurred in POM classes :"+e);
 			return null;
@@ -335,6 +958,20 @@ public class Online_TopUp extends FunctionLibrary{
 
 	public synchronized String Modify_Bundle(String locator){
 
+		String multiLanguageExcelPath = System.getProperty("user.dir")+property.getProperty("resourceMgmtfilekeyPath");
+
+		String languageName = property.getProperty("Language_Required");
+		
+		ReadExcel excel=new ReadExcel(multiLanguageExcelPath);
+		
+		String[] xpathsplittext = null;
+		String resourceFileName = null;
+		String filePathLocation = null;
+		NodeList nodeList=null;
+		String Resxfilevalue = null;
+		String[] SplitResxfilevalue = null;
+		String finalresxfilevalue = null;
+		
 		try{
 			Hashtable<String, String> hs = new Hashtable<String, String>();
 			hs.put("services_Select", "id#loadType");
@@ -405,12 +1042,184 @@ public class Online_TopUp extends FunctionLibrary{
 			hs.put("btnAdminApprove", "id#btnAdminApprove");
 			hs.put("btnReset", "id#btnReset");
 			hs.put("lblResponseMessage", "xpath#//span[@id='lblError' and contains(@style,'color: rgb(0, 128, 0)')]");
-			hs.put("linkBundleBucket", "linktext#Bundle Bucket");
-			hs.put("UpdateSuccessMessage", "xpath#.//label[contains(text(),'Updated Successfully')]");
+			hs.put("linkBundleBucket", "xpath#//a[text()='HomeResources>>PABundleBucket']");
+			hs.put("UpdateSuccessMessage", "xpath#.//label[contains(text(),'SubscriberResources>>PrePostSucess')]");
 			hs.put("AlertMessage", "xpath#//span[@id='lblError' and contains(@style,'Red')]");
-			hs.put("close_button", "xpath#//li[@title='Subscriber Logout']");
+			hs.put("close_button", "xpath#//div[@class='close-icon close-view-icon']");
 			hs.put("labelVoiceSMS","id#tVoiceSMS");
-			return hs.get(locator);
+			
+			String xpathValue = hs.get(locator);
+			
+			if(xpathValue.contains(">>")) {
+				
+
+				if(xpathValue.contains("text()=")){
+				
+					System.out.println("text()");	
+						
+					Pattern pattern = Pattern.compile("xpath(.*)text(.*)='([\\sa-zA-Z>]+)']");
+					
+					Matcher matcher = pattern.matcher(xpathValue);
+					
+					while(matcher.find()){
+						
+						String splittedXpath = matcher.group(3);					
+						
+						System.out.println("splittedXpath3 :"+splittedXpath);
+						
+						xpathsplittext = splittedXpath.split(">>");
+						
+						resourceFileName = xpathsplittext[0] + excel.RetrieveAutomationKeyFromExcel("Extension_Language", "Resx_Extension", languageName);
+						
+						filePathLocation=property.getProperty("resourcesFilePath_GBR");
+						String resourceFileToGetValue=filePathLocation+"\\"+resourceFileName;
+						log.info("File path is "+resourceFileToGetValue);
+						File file=new File("//\\"+resourceFileToGetValue);
+	
+						String commonAttribute=property.getProperty("attributeCommonValue");
+						String fullAttributewithName=commonAttribute+"[@name='"+ xpathsplittext[1] +"']/value";
+						log.info("Attribute to Retrieve Node value is : "+fullAttributewithName);
+	
+						DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
+						DocumentBuilder builder=factory.newDocumentBuilder();
+						Document document=builder.parse(file);
+						document.getDocumentElement().normalize();
+						XPath xpath=XPathFactory.newInstance().newXPath();
+						nodeList=(NodeList)xpath.compile(fullAttributewithName).evaluate(document,XPathConstants.NODESET);
+	
+						Resxfilevalue = nodeList.item(0).getTextContent();
+						
+						if(Resxfilevalue.contains("'")){
+							SplitResxfilevalue = Resxfilevalue.split("'");
+							
+							for(int m = 1; m <= SplitResxfilevalue.length -1; m++){
+								if(m < 2){
+									finalresxfilevalue = SplitResxfilevalue[m-1] +"',\"'\",'"+ SplitResxfilevalue[m];
+								} else{
+									finalresxfilevalue = finalresxfilevalue + "',\"'\",'"+ SplitResxfilevalue[m];
+								}
+							}
+							
+							xpathValue =  xpathValue.replaceAll("'"+ splittedXpath +"'", "concat('"+ finalresxfilevalue +"')");
+						} else{
+							xpathValue = xpathValue.replaceAll(splittedXpath, Resxfilevalue);
+						}
+						
+					
+						} 
+					
+				} else if(xpathValue.contains("contains(text()")){
+					
+					System.out.println("contains(text()");
+					
+					Pattern pattern = Pattern.compile("(.*)contains(.*)text(.*),'(.*)'");
+					
+					Matcher matcher = pattern.matcher(xpathValue);
+					
+					while(matcher.find()){
+						
+						String splittedXpath = matcher.group(4);
+						
+						System.out.println("splittedXpath :"+splittedXpath);
+						
+						xpathsplittext = splittedXpath.split(">>");
+						
+						resourceFileName = xpathsplittext[0] + excel.RetrieveAutomationKeyFromExcel("Extension_Language", "Resx_Extension", languageName);
+						
+						filePathLocation=property.getProperty("resourcesFilePath_GBR");
+						String resourceFileToGetValue=filePathLocation+"\\"+resourceFileName;
+						log.info("File path is "+resourceFileToGetValue);
+						File file=new File("//\\"+resourceFileToGetValue);
+	
+						String commonAttribute=property.getProperty("attributeCommonValue");
+						String fullAttributewithName=commonAttribute+"[@name='"+ xpathsplittext[1] +"']/value";
+						log.info("Attribute to Retrieve Node value is : "+fullAttributewithName);
+	
+						DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
+						DocumentBuilder builder=factory.newDocumentBuilder();
+						Document document=builder.parse(file);
+						document.getDocumentElement().normalize();
+						XPath xpath=XPathFactory.newInstance().newXPath();
+						nodeList=(NodeList)xpath.compile(fullAttributewithName).evaluate(document,XPathConstants.NODESET);
+	
+						Resxfilevalue = nodeList.item(0).getTextContent();
+						
+						if(Resxfilevalue.contains("'")){
+							SplitResxfilevalue = Resxfilevalue.split("'");
+							
+							for(int m = 1; m <= SplitResxfilevalue.length -1; m++){
+								if(m < 2){
+									finalresxfilevalue = SplitResxfilevalue[m-1] +"',\"'\",'"+ SplitResxfilevalue[m];
+								} else{
+									finalresxfilevalue = finalresxfilevalue + "',\"'\",'"+ SplitResxfilevalue[m];
+								}
+							}
+							
+							xpathValue =  xpathValue.replaceAll("'"+ splittedXpath +"'", "concat('"+ finalresxfilevalue +"')");
+						} else{
+							xpathValue = xpathValue.replaceAll(splittedXpath, Resxfilevalue);
+						}
+						
+			
+						}
+					
+					} else if(xpathValue.contains("title=")){
+						
+						System.out.println("title()");	
+							
+						Pattern pattern = Pattern.compile("xpath(.*)title(.*)='([\\sa-zA-Z>]+)']");
+						
+						Matcher matcher = pattern.matcher(xpathValue);
+						
+						while(matcher.find()){
+							
+							String splittedXpath = matcher.group(3);					
+							
+							System.out.println("splittedXpath3 :"+splittedXpath);
+							
+							xpathsplittext = splittedXpath.split(">>");
+							
+							resourceFileName = xpathsplittext[0] + excel.RetrieveAutomationKeyFromExcel("Extension_Language", "Resx_Extension", languageName);
+							
+							filePathLocation=property.getProperty("resourcesFilePath_GBR");
+							String resourceFileToGetValue=filePathLocation+"\\"+resourceFileName;
+							log.info("File path is "+resourceFileToGetValue);
+							File file=new File("//\\"+resourceFileToGetValue);
+	
+							String commonAttribute=property.getProperty("attributeCommonValue");
+							String fullAttributewithName=commonAttribute+"[@name='"+ xpathsplittext[1] +"']/value";
+							log.info("Attribute to Retrieve Node value is : "+fullAttributewithName);
+	
+							DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
+							DocumentBuilder builder=factory.newDocumentBuilder();
+							Document document=builder.parse(file);
+							document.getDocumentElement().normalize();
+							XPath xpath=XPathFactory.newInstance().newXPath();
+							nodeList=(NodeList)xpath.compile(fullAttributewithName).evaluate(document,XPathConstants.NODESET);
+	
+							Resxfilevalue = nodeList.item(0).getTextContent();
+							
+							if(Resxfilevalue.contains("'")){
+								SplitResxfilevalue = Resxfilevalue.split("'");
+								
+								for(int m = 1; m <= SplitResxfilevalue.length -1; m++){
+									if(m < 2){
+										finalresxfilevalue = SplitResxfilevalue[m-1] +"',\"'\",'"+ SplitResxfilevalue[m];
+									} else{
+										finalresxfilevalue = finalresxfilevalue + "',\"'\",'"+ SplitResxfilevalue[m];
+									}
+								}
+								
+								xpathValue =  xpathValue.replaceAll("'"+ splittedXpath +"'", "concat('"+ finalresxfilevalue +"')");
+							} else{
+								xpathValue = xpathValue.replaceAll(splittedXpath, Resxfilevalue);
+							}
+	
+							} 
+						
+					}
+			}
+		return xpathValue;
 
 		}catch(Exception e){
 			log.info("Error occurred in POM classes :"+e);
