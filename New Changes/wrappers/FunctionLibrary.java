@@ -5,11 +5,14 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.math.BigDecimal;
 import java.net.InetAddress;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -57,6 +60,7 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.ie.InternetExplorerDriver;
 import org.openqa.selenium.interactions.Actions;
@@ -78,6 +82,8 @@ import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
+import com.univocity.parsers.csv.CsvParser;
+import com.univocity.parsers.csv.CsvParserSettings;
 
 import autoitx4java.AutoItX;
 import report.ExtentTestManager;
@@ -277,22 +283,26 @@ return element;
 
 		try {
 
-			property =new Properties();
-			property.load(new FileInputStream(new File("./src/properties/Env.properties")));
-
 			sysProperty =new Properties();
-			sysProperty.load(new FileInputStream(new File("./src/properties/SystemConfig.properties")));
+			sysProperty.load(new FileInputStream(new File("./config/SystemConfig.properties")));
 
+			property =new Properties();
+			if(sysProperty.getProperty("EnvironmentProperty").equalsIgnoreCase("ST")){
+				property.load(new FileInputStream(new File("./config/Env_ST.properties")));
+			}else if(sysProperty.getProperty("EnvironmentProperty").equalsIgnoreCase("DEV")){
+				property.load(new FileInputStream(new File("./config/Env_DEV.properties")));
+			}
+			
 			Runtimevalue=new Properties();
 		
 			GAFValue =new Properties();
-			GAFValue.load(new FileInputStream(new File("./src/properties/GlobalAddressFinderValues.properties")));
+			GAFValue.load(new FileInputStream(new File("./config/GlobalAddressFinderValues.properties")));
 
 			PropertyConfigurator.configure(sysProperty.getProperty("log4jConfPath"));
 			log.info("Initialized all the files...");
 			
 			browserProperty =new Properties();
-			browserProperty.load(new FileInputStream(new File("./src/properties/browser.properties")));
+			browserProperty.load(new FileInputStream(new File("./config/browser.properties")));
 
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -385,11 +395,11 @@ return element;
 		}catch(StaleElementReferenceException e){
 			return selectByLocatorType(locatorFromPOM);
 		}catch (NoSuchElementException e) {
-			ExtentTestManager.reportStepInfo("No such element '"+ getValueFromPOM +"' found or dislayed");
+			ExtentTestManager.reportStepFail(driver,"No such element '"+ getValueFromPOM +"' found or dislayed",true);
 			//return (WebElement) e;
 			return null;
 		}catch (Exception e) {
-			ExtentTestManager.reportStepInfo("Exception occured while finding the element'"+ getValueFromPOM +"'. Exception is "+e);
+			ExtentTestManager.reportStepFail(driver,"Exception occured while finding the element'"+ getValueFromPOM +"'. Exception is "+e,true);
 			//return (WebElement) e;
 			return null;
 		}
@@ -428,7 +438,7 @@ return element;
 		String browserName=browserProperty.getProperty("testBrowser");
 		if (browserName.equalsIgnoreCase("chrome")||browserName.equalsIgnoreCase("ie")) {
 			try {
-				Thread.sleep(3000);
+				Thread.sleep(1500);
 			} catch (InterruptedException e2) {
 				e2.printStackTrace();
 			}
@@ -548,7 +558,9 @@ return element;
 			
 			} else if (browserName.equalsIgnoreCase("chrome")) {
 				System.setProperty("webdriver.chrome.driver", "./BrowserDrivers/chromedriver.exe");
-				driver = new ChromeDriver();
+				ChromeOptions options = new ChromeOptions();
+				options.addArguments("--no-sandbox");
+				driver = new ChromeDriver(options);
 				driver.manage().window().maximize();
 				driver.get(urlToLaunch);
 				//Do not un-comment the below line or u may face - 'cannot determine loading status from timeout' issue
@@ -1161,6 +1173,7 @@ return element;
 
 	public synchronized boolean WebListSelect(String getValueFromPOM, String strTestObject,String strtestData,int strExecEventFlag){
 		String testData=null;
+		String[] splitted_text_value = null;		
 
 		try {
 			if(strExecEventFlag==1){
@@ -1172,6 +1185,26 @@ return element;
 				ExtentTestManager.reportStepFail(driver, "Required details are not provided in the data sheet.", false);
 				return false;
 			}
+			// Checking the column value is having the delimiter ";"
+			if(testData.contains(";")){
+				// Splitting the value with ";" and storing the values in an array
+				splitted_text_value = testData.split("\\;");
+				// Checking the first item in an array is having the delimiters "<" and ">"
+				if(splitted_text_value[0].contains("<") && splitted_text_value[0].contains(">") && splitted_text_value[1].contains("<") && splitted_text_value[1].contains(">")){
+				// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet and concatenates the second item in an array. 
+				testData = RetrieveValueUsingAutomationKey(splitted_text_value[0].substring(splitted_text_value[0].indexOf("<") + 1, splitted_text_value[0].indexOf(">"))) + " " + RetrieveValueUsingAutomationKey(splitted_text_value[1].substring(splitted_text_value[1].indexOf("<") + 1, splitted_text_value[1].indexOf(">")));
+				} else if(splitted_text_value[0].contains("<") && splitted_text_value[0].contains(">")){
+					testData = RetrieveValueUsingAutomationKey(splitted_text_value[0].substring(splitted_text_value[0].indexOf("<") + 1, splitted_text_value[0].indexOf(">"))) + splitted_text_value[1];
+				}
+				
+			} else {
+				// Checking the column value is having the delimiters "<" and ">"
+				if(testData.contains("<") && testData.contains(">")){
+				// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet.
+				testData = RetrieveValueUsingAutomationKey(testData.substring(testData.indexOf("<") + 1, testData.indexOf(">")));
+				}
+			}
+			
 			new Select(selectByLocatorType(getValueFromPOM)).selectByVisibleText(testData);
 			ExtentTestManager.reportStepPass("Item '" +  testData + "' is selected from the '"+strTestObject+"' List box successfully");
 			return true;
@@ -1213,35 +1246,128 @@ return element;
 		String actualResult=null;
 		boolean functionStatus= false;
 		String testData=null;
+		String splitted_text1[] = null;
+		String splitted_text2[] = null;
+		String valueFromResxFile=null;
+		String initialvalue = "";
 
 		try{
-			if(strExecEventFlag==1)
+			if(strExecEventFlag==1){
 				testData= getTestData(testDataFilePathStatic, testComponentNameStatic, strtestData, gblrecordsCounterStatic);
-			else
+			}else{
 				testData=strtestData;
-
+			}
+			
 			if(testData==null){
 				ExtentTestManager.reportStepFail(driver, "Required details are not provided in the data sheet.", false);
 				return false;
 			}
+			
+			if(!(testData.contains("<") && testData.contains(">"))){
+				//ExtentTestManager.reportStepFail(driver,"The text : '"+ testData +"' is not present in any of the resource files.",true);
+				valueFromResxFile = testData;
+				//functionStatus=false;
+			} else {
+			
+			if(testData.contains(";")){
+			
+				splitted_text1 = testData.split("\\;");
+				
+				for(int k = 0; k <= splitted_text1.length - 1; k++) {
+			
+					if(splitted_text1[k].contains("|")){
+						
+						splitted_text2 = splitted_text1[k].split("\\|");
+						
+						log.info("Resx Key : "+ splitted_text2[0].substring(splitted_text2[0].indexOf("<") + 1, splitted_text2[0].indexOf(">")));
+						
+						valueFromResxFile = RetrieveValueUsingAutomationKey(splitted_text2[0].substring(splitted_text2[0].indexOf("<") + 1, splitted_text2[0].indexOf(">")));
+	
+						if(valueFromResxFile.contains("{") && valueFromResxFile.contains("}")){
+							for(int i = 1; i <= splitted_text2.length - 1; i++) {
+								
+								valueFromResxFile = valueFromResxFile.replace("{"+ Integer.toString(i-1) +"}", splitted_text2[i]);
+								
+							}
+						} else {
+							valueFromResxFile = valueFromResxFile + splitted_text2[1];
+						}
+					
+					} else if(splitted_text1[k].contains("#")){
+						
+						splitted_text2 = splitted_text1[k].split("\\#");
+						
+						valueFromResxFile = RetrieveValueUsingAutomationKey(splitted_text2[1].substring(splitted_text2[1].indexOf("<") + 1, splitted_text2[1].indexOf(">")));
+						
+						valueFromResxFile = splitted_text2[0] + valueFromResxFile;
+					
+					} 	else {
+						valueFromResxFile = RetrieveValueUsingAutomationKey(splitted_text1[k].substring(splitted_text1[k].indexOf("<") + 1, splitted_text1[k].indexOf(">")));
+					}
+					
+					initialvalue = initialvalue + valueFromResxFile;
+				}
+			
+				valueFromResxFile = initialvalue;
+				
+			} else {
+			
+				if(testData.contains("|")){
+					
+					splitted_text2 = testData.split("\\|");
+					
+					log.info("Resx Key : "+ splitted_text2[0].substring(splitted_text2[0].indexOf("<") + 1, splitted_text2[0].indexOf(">")));
+					
+					valueFromResxFile = RetrieveValueUsingAutomationKey(splitted_text2[0].substring(splitted_text2[0].indexOf("<") + 1, splitted_text2[0].indexOf(">")));
+	
+					if(valueFromResxFile.contains("{") && valueFromResxFile.contains("}")){
+						for(int i = 1; i <= splitted_text2.length - 1; i++) {
+							
+							valueFromResxFile = valueFromResxFile.replace("{"+ Integer.toString(i-1) +"}", splitted_text2[i]);
+							
+						}
+					} else {
+						valueFromResxFile = valueFromResxFile + splitted_text2[1];
+					}
+				
+				} else if(testData.contains("#")){
+				
+					splitted_text2 = testData.split("\\#");
 
+					valueFromResxFile = RetrieveValueUsingAutomationKey(splitted_text2[1].substring(splitted_text2[1].indexOf("<") + 1, splitted_text2[1].indexOf(">")));
+				
+					valueFromResxFile = splitted_text2[0] + valueFromResxFile;
+
+				} else {
+					valueFromResxFile = RetrieveValueUsingAutomationKey(testData.substring(testData.indexOf("<") + 1, testData.indexOf(">")));
+				}
+			} 
+
+			}
 			actualResult = selectByLocatorType(getValueFromPOM).getText();
 
+		} catch(StringIndexOutOfBoundsException e){
+			ExtentTestManager.reportStepFail(driver,"Key name for the text : '"+ splitted_text2[0] +"' is not present in resource management file.",true);
+			functionStatus=false;
 		} catch (Exception e){
 			ExtentTestManager.reportStepFail(driver,"Error occured while getting the text from the WebElement '"+strTestObject+"' . Error description is :"+e.getMessage(),true);
 			functionStatus=false;
 		}
 
+	
 		try{
-			if((actualResult.trim()).equalsIgnoreCase(testData.trim())){
-				ExtentTestManager.reportStepPass("Actual value '" +actualResult+ "' matches with the expected value '"+testData+ "' in the input field '"+strTestObject+"'");
+			if((actualResult.trim()).equalsIgnoreCase(valueFromResxFile.trim())){
+				ExtentTestManager.reportStepPass("Actual value '" +actualResult+ "' matches with the expected value '"+valueFromResxFile+ "' in the input field '"+strTestObject+"'");
 				functionStatus=true;
 			}else{
-				ExtentTestManager.reportStepFail(driver,"Actual Value '" +actualResult+ "' does not match with the Expected value '"+testData+ "' in the input field '"+strTestObject+"'",true);
+				ExtentTestManager.reportStepFail(driver,"Actual Value '" +actualResult+ "' does not match with the Expected value '"+valueFromResxFile+ "' in the input field '"+strTestObject+"'",true);
 				functionStatus=false;
 			}
-		}catch (StaleElementReferenceException e){
+		} catch (StaleElementReferenceException e){
 			return WebElementTextCompare(getValueFromPOM, strTestObject, strtestData, strExecEventFlag);
+		} catch (NullPointerException e){
+			ExtentTestManager.reportStepFail(driver,"The value from the resource management sheet is null.", true);
+			functionStatus=false;
 		} catch (Exception e){
 			ExtentTestManager.reportStepFail(driver,"Error occured while comparing actual and expected values. Error description is :"+e.getMessage(), true);
 			functionStatus=false;
@@ -1572,6 +1698,10 @@ return element;
 				ResultSet rs_SQLServer = stmt.executeQuery(query);
 				rs_SQLServer.next();
 				Actual_Value = rs_SQLServer.getString(1).trim();
+				
+				if(Actual_Value.contains("E-10")){
+					Actual_Value = new BigDecimal(Actual_Value).toPlainString();
+				}
 
 				if (Expected_value.contains("CURRENT_DATE")){
 					String []ExpectedvalueWithFormat=Expected_value.split("#");
@@ -1792,6 +1922,9 @@ return element;
 		String actualResult=null;
 		String automationKey=null;
 		String valueFromResxFile=null;
+		String[] splitted_text1 = null;
+		String[] splitted_text2 = null;
+		String initialvalue = "";
 
 		try{
 			if(strExecEventFlag==1){
@@ -1809,9 +1942,69 @@ return element;
 
 			//Actual value of the Element
 			actualResult = selectByLocatorType(getValueFromPOM).getText();
+			
+			if(automationKey.contains(";")){
+				
+				splitted_text1 = automationKey.split("\\;");
+				
+				for(int k = 0; k <= splitted_text1.length - 1; k++) {
+			
+					if(splitted_text1[k].contains("|")){
+						
+						splitted_text2 = splitted_text1[k].split("\\|");
+						
+						log.info("Resx Key : "+ splitted_text2[0].substring(splitted_text2[0].indexOf("<") + 1, splitted_text2[0].indexOf(">")));
+						
+						valueFromResxFile = RetrieveValueUsingAutomationKey(splitted_text2[0].substring(splitted_text2[0].indexOf("<") + 1, splitted_text2[0].indexOf(">")));
+	
+						if(valueFromResxFile.contains("\\{") && valueFromResxFile.contains("\\}")){
+							for(int i = 1; i <= splitted_text2.length - 1; i++) {
+								
+								valueFromResxFile = valueFromResxFile.replace("{"+ Integer.toString(i-1) +"}", splitted_text2[i]);
+								
+							}
+						} else {
+							valueFromResxFile = valueFromResxFile + splitted_text2[1];
+						}
+					
+					} else {
+						valueFromResxFile = RetrieveValueUsingAutomationKey(splitted_text1[k].substring(splitted_text1[k].indexOf("<") + 1, splitted_text1[k].indexOf(">")));
+					}
+					
+					initialvalue = initialvalue + valueFromResxFile;
+				}
+			
+				valueFromResxFile = initialvalue;
+				
+			} else {
+			
+				if(automationKey.contains("|")){
+					
+					splitted_text2 = automationKey.split("\\|");
+					
+					log.info("Resx Key : "+ splitted_text2[0].substring(splitted_text2[0].indexOf("<") + 1, splitted_text2[0].indexOf(">")));
+					
+					valueFromResxFile = RetrieveValueUsingAutomationKey(splitted_text2[0].substring(splitted_text2[0].indexOf("<") + 1, splitted_text2[0].indexOf(">")));
+	
+					if(valueFromResxFile.contains("\\{") && valueFromResxFile.contains("\\}")){
+						for(int i = 1; i <= splitted_text2.length - 1; i++) {
+							
+							valueFromResxFile = valueFromResxFile.replace("{"+ Integer.toString(i-1) +"}", splitted_text2[i]);
+							
+						}
+					} else {
+						valueFromResxFile = valueFromResxFile + splitted_text2[1];
+					}
+				
+				} else {
+					valueFromResxFile = RetrieveValueUsingAutomationKey(automationKey.substring(automationKey.indexOf("<") + 1, automationKey.indexOf(">")));
+				}
+			}
 
+	
 			//Get the Value for the Key from the .resx file using the Automation from Resource Management file
-			valueFromResxFile=RetrieveValueUsingAutomationKey(automationKey);
+			// valueFromResxFile=RetrieveValueUsingAutomationKey(automationKey);
+			
 			log.info("valueFromResxFile in Fl RESX STATIC COMPARE is : "+valueFromResxFile);
 
 			if(valueFromResxFile==null || automationKey.equalsIgnoreCase("")){
@@ -1841,7 +2034,9 @@ return element;
 		String resourceCountry=null;
 		String filePathLocation=null;
 		NodeList nodeList=null;
-		String resxFilePath="//\\"+property.getProperty("resourceMgmtfilekeyPath");
+		//String resxFilePath="//\\"+property.getProperty("resourceMgmtfilekeyPath");
+		String resxFilePath=System.getProperty("user.dir")+property.getProperty("resourceMgmtfilekeyPath");
+		
 		ReadExcel suiteXL = new ReadExcel(resxFilePath);
 
 		try{
@@ -1850,10 +2045,12 @@ return element;
 			resourceCountry=suiteXL.RetrieveAutomationKeyFromExcel(property.getProperty("resourcefileSheetName"), "Country_KeyInPropFile", strAutomationkey);
 
 			if(resourceFileName==null || resourceFileName.trim().equals("") || resourceKey==null || resourceKey.trim().equals("") || resourceCountry==null || resourceCountry.trim().equals("")){
-				ExtentTestManager.reportStepFail(driver, "Resource Filename or key is Empty or NULL in the Resource Management sheet", false);
+				ExtentTestManager.reportStepFail(driver, "Resource Filename or key is Empty or not present in the Resource Management sheet", false);
 				return null;
 			}
-
+			
+			resourceFileName = resourceFileName + suiteXL.RetrieveAutomationKeyFromExcel("Extension_Language", "Resx_Extension", property.getProperty("Language_Required"));
+			
 			filePathLocation=property.getProperty(resourceCountry);
 			String resourceFileToGetValue=filePathLocation+"\\"+resourceFileName;
 			log.info("File path is "+resourceFileToGetValue);
@@ -1988,19 +2185,19 @@ return element;
 		
 		try{
 			if(browserProperty.getProperty("testBrowser").equalsIgnoreCase("chrome")){
-				/*WebElement element=selectByLocatorType(getValueFromPOM);
+				WebElement element=selectByLocatorType(getValueFromPOM);
 				Actions action = new Actions(driver);
 				action.moveToElement(element).click().build().perform();
 				ExtentTestManager.reportStepPass("Mouse moved to the element '"+strOject+"' and click action is done successfully");
-				return true;*/
+				return true;
 				
-				WebElement element = selectByLocatorType(getValueFromPOM);
+				/* WebElement element = selectByLocatorType(getValueFromPOM);
 				((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
 				Thread.sleep(700); 
 				element = selectByLocatorType(getValueFromPOM);
 				element.click();
 				ExtentTestManager.reportStepPass("Mouse moved to the element '"+strOject+"' and click action is done successfully");
-				return true;
+				return true; */
 				
 			}else if(browserProperty.getProperty("testBrowser").equalsIgnoreCase("ie") || browserProperty.getProperty("testBrowser").equalsIgnoreCase("firefox")){
 				WebElement element = selectByLocatorType(getValueFromPOM);
@@ -2176,7 +2373,7 @@ return element;
 		try{
 
 			ffBrowserName = browserProperty.getProperty("testBrowser");
-			if(ffBrowserName.equalsIgnoreCase("Firefox")){
+			if(ffBrowserName.equalsIgnoreCase("Firefox") || ffBrowserName.equalsIgnoreCase("IE")){
 				WebDriverWait ww = new WebDriverWait(driver, 60);
 				ww.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//button[@id='ErrmsgClose']/ancestor::div[@class='modal-content']")));
 				WebElement element = driver.findElement(By.xpath("//button[@id='ErrmsgClose']/ancestor::div[@class='modal-content']"));
@@ -2244,6 +2441,13 @@ return element;
 				}
 
 				Pattern_String = Pattern_String.trim();
+				
+				// Checking the column value is having the delimiters "<" and ">"
+				if(Pattern_String.contains("<") && Pattern_String.contains(">")){
+				// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet.
+					Pattern_String = RetrieveValueUsingAutomationKey(Pattern_String.substring(Pattern_String.indexOf("<") + 1, Pattern_String.indexOf(">")));
+				}
+				
 				Pattern expPattern=Pattern.compile(Pattern_String);
 				matchedPattern = expPattern.matcher(RetrievedMessage.toString());
 				matchedStatus=matchedPattern.find();
@@ -2955,6 +3159,10 @@ return element;
 				rs_SQLServer.next();
 				Actual_Value = rs_SQLServer.getString(1).trim();
 
+				if(Actual_Value.contains("E-10")){
+					Actual_Value = new BigDecimal(Actual_Value).toPlainString();
+				}
+				
 				if (Expected_value.contains("CURRENT_DATE")){
 					String []ExpectedvalueWithFormat=Expected_value.split("#");
 					String db_Date = Actual_Value.split(" ")[0];
@@ -2964,6 +3172,12 @@ return element;
 					Expected_value=dateformat.format(date);
 				}
 
+				//Newly added on  20-09-2016 to validate system IP against DB value
+				if (Expected_value.equalsIgnoreCase("GET_HOST_IP")){
+					InetAddress IP=InetAddress.getLocalHost();
+					Expected_value=	IP.getHostAddress();
+				}
+			
 				if(Actual_Value.equalsIgnoreCase(Expected_value)){
 					ExtentTestManager.reportStepPass("Actual value '"+Actual_Value+"' for the ESHOP SQL Query "+query+" matches the expected value : '"+Expected_value+"'");
 					functionStatus= true;
@@ -3195,6 +3409,7 @@ return element;
 		String strData = null;
 		boolean WebListSelectedValue = false;
 		String selectedValue = null;
+		String[] splitted_text_value = null;
 		try{
 			if(strExecEventFlag==1){
 				strData = getTestData(testDataFilePathStatic, testComponentNameStatic, strColumnName, gblrecordsCounterStatic);
@@ -3204,7 +3419,28 @@ return element;
 				return false;
 			}
 			selectedValue = new Select(selectByLocatorType(getValueFromPOM)).getFirstSelectedOption().getText();
-			if(selectedValue.trim().equalsIgnoreCase(strData.trim())){
+			
+			// Checking the column value is having the delimiter ";"
+			if(strData.contains(";")){
+				// Splitting the value with ";" and storing the values in an array
+				splitted_text_value = strData.split("\\;");
+				// Checking the first item in an array is having the delimiters "<" and ">"
+				if(splitted_text_value[0].contains("<") && splitted_text_value[0].contains(">") && splitted_text_value[1].contains("<") && splitted_text_value[1].contains(">")){
+				// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet and concatenates the second item in an array. 
+				strData = RetrieveValueUsingAutomationKey(splitted_text_value[0].substring(splitted_text_value[0].indexOf("<") + 1, splitted_text_value[0].indexOf(">"))) + " " + RetrieveValueUsingAutomationKey(splitted_text_value[1].substring(splitted_text_value[1].indexOf("<") + 1, splitted_text_value[1].indexOf(">")));
+				} else if(splitted_text_value[0].contains("<") && splitted_text_value[0].contains(">")){
+					strData = RetrieveValueUsingAutomationKey(splitted_text_value[0].substring(splitted_text_value[0].indexOf("<") + 1, splitted_text_value[0].indexOf(">"))) + splitted_text_value[1];
+				}
+				
+			} else {
+				// Checking the column value is having the delimiters "<" and ">"
+				if(strData.contains("<") && strData.contains(">")){
+				// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet.
+				strData = RetrieveValueUsingAutomationKey(strData.substring(strData.indexOf("<") + 1, strData.indexOf(">")));
+				}
+			}
+			
+			if(selectedValue.trim().equals(strData.trim())){
 				ExtentTestManager.reportStepPass(""+strTestObject +"'s selected dropdown value '"+selectedValue + "' matches with the expected value '"+strData+"'");
 				WebListSelectedValue = true;
 			}else{
@@ -3557,7 +3793,7 @@ return element;
 
 			boolean fileexist=false;
 			int fileAppeartime=0;
-			while(fileAppeartime<30){
+			while(fileAppeartime<10){
 				Thread.sleep(1000);
 				listOfFile = directory.listFiles();
 				if(listOfFile.length != 0){
@@ -3581,7 +3817,7 @@ return element;
 
 			boolean foundstatus=false;
 			int time=0;
-			while(time<30){
+			while(time<10){
 				Thread.sleep(1000);	
 				listOfFile = directory.listFiles();
 				for(int i = 0; i<listOfFile.length; i++){
@@ -3621,7 +3857,7 @@ return element;
 			File file =new File("//\\" +path +fileName);
 			log.info(file.getAbsolutePath()+" || "+file.getName());
 			int i=0;
-			while(i<60){
+			while(i<10){
 				Thread.sleep(1000);
 				try {
 					in = new Scanner(file);
@@ -3640,6 +3876,7 @@ return element;
 								if(!(envVariable.trim().equalsIgnoreCase("NA"))){
 									log.info("Storing the Pattern Matched in the Env Variable '"+envVariable+"'");
 									Runtimevalue.setProperty(envVariable, m.group(0));
+									in.close();
 									ExtentTestManager.reportStepPass("The Dynamic Value '"+m.group(0)+"' is successfully stored in the Runtime Varaible '"+envVariable+"'.");
 								}
 								break;
@@ -4234,6 +4471,7 @@ return element;
 		boolean functionStatus = false;
 		String path = null;
 		String fileNameValue = null;
+		String fileMovePath = null;
 		int flag = 0;
 
 		try{
@@ -4246,6 +4484,82 @@ return element;
 				ExtentTestManager.reportStepFail(driver, "Required details are not provided in test data sheet.", false);
 				return false;
 			}
+			
+			
+			
+		}catch(Exception e){
+			
+			e.getMessage();
+			
+		}
+		
+		
+		try{
+			
+			InputStream inStream = null;
+			OutputStream outStream = null;
+			
+			Date date = new Date();
+			SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MMM.yyyy-hh_mm_ss");
+			
+			String todayDate = dateFormat.format(date);
+			
+			File directory = new File("//\\" +path);
+			for(File listOfFiles : directory.listFiles()){
+				if(listOfFiles.getName().equals(fileNameValue)){
+					
+					fileMovePath = property.getProperty("logFilesAlternatePath");
+					File existFile = new File("//\\" +path+fileNameValue);
+					File replaceFile = new File("//\\" +fileMovePath+todayDate+".log");
+					
+					inStream = new FileInputStream(existFile);
+					outStream = new FileOutputStream(replaceFile);
+					
+					if(existFile.length() != 0){
+					
+					log.info("File is available");
+					
+					byte[] buffer = new byte[10240];
+					
+					int length;
+					
+					//Copy the file
+					
+					log.info("Going to move the files");
+					
+					while((length = inStream.read(buffer)) > 0){
+						
+						outStream.write(buffer, 0, length);
+						
+					}
+					
+						inStream.close();
+						outStream.close();
+						
+						ExtentTestManager.reportStepPass("Log file is copied to path("+fileMovePath+") successfully and named with today's date");
+						break;
+						
+					}
+					
+				}
+			}
+			
+		}catch(FileNotFoundException e){
+			
+			ExtentTestManager.reportStepPass("Log file is not available");
+			log.info(e.getMessage());
+			
+		}catch(Exception e){
+			
+			ExtentTestManager.reportStepPass("Log file is not available");
+			log.info(e.getMessage());
+			
+		}
+		
+		
+		
+		
+		try{
 
 			File directory = new File("//\\" +path);
 
@@ -4352,6 +4666,8 @@ return element;
 				result= SQLDBSelectConditionFromEnvvar(sqltablename, strsqlcolumnname, strsqlcondition, strenvironmentvariable, strExpectedvalue, strExecEventFlag);
 			}else if(actionType.trim().equalsIgnoreCase("DateInEnvVar")){
 				result= SQLDBDateCompareInEnvVar(sqltablename, strsqlcolumnname, strsqlcondition, strExpectedvalue, strenvironmentvariable, 1);
+			}else if(actionType.trim().equalsIgnoreCase("ValueExist")){
+				result= SQLDBCheckValueExist(sqltablename, strsqlcolumnname, strsqlcondition, strExecEventFlag);
 			}else{
 				ExtentTestManager.reportStepFail(driver, "Invalid Action Type described in Excel sheet  "+actionType+"", false);
 			}
@@ -4433,6 +4749,9 @@ return element;
 					Expected_value=dateformat.format(date);
 				}
 
+				if(Actual_Value.contains("E-10")){
+					Actual_Value = new BigDecimal(Actual_Value).toPlainString();
+				}
 				if(Actual_Value.equalsIgnoreCase(Expected_value)){
 					ExtentTestManager.reportStepPass("Actual value '"+Actual_Value+"' for the SQL Query "+query+" matches the expected value : '"+Expected_value+"' where Condition value from ENV Variable '"+environmentvariable+"'");
 					functionStatus= true;
@@ -6269,6 +6588,8 @@ return element;
 		String path = null;
 		String startValue = null;
 		String endValue = null;
+		String fileMovePath = null;
+		
 		int flag = 0;
 
 		try{
@@ -6281,7 +6602,80 @@ return element;
 			if(path==null || startValue==null || endValue==null){
 				ExtentTestManager.reportStepFail(driver, "Required details are not provided in test data sheet.", false);
 				return false;
+				}
+			
+			}catch(Exception e){
+				
+				ExtentTestManager.reportStepFail(driver,"Exception occurred while getting the values for "+path+", "+startValue+" & "+endValue+" " , false);
+				
 			}
+			
+			
+			try{
+				
+				InputStream inStream = null;
+				OutputStream outStream = null;
+				
+				Date date = new Date();
+				SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MMM.yyyy-hh_mm_ss");
+				
+				String todayDate = dateFormat.format(date);
+				
+				File directory = new File("//\\" +path);
+				for(File listOfFiles : directory.listFiles()){
+					if(listOfFiles.getName().startsWith(startValue) && listOfFiles.getName().endsWith(endValue)){
+						
+						fileMovePath = property.getProperty("logFilesAlternatePath");
+						File existFile = new File("//\\" +path+startValue+endValue);
+						File replaceFile = new File("//\\" +fileMovePath+todayDate+endValue);
+						
+						inStream = new FileInputStream(existFile);
+						outStream = new FileOutputStream(replaceFile);
+						
+						if(existFile.length() != 0){
+						
+						log.info("File is available");
+						
+						byte[] buffer = new byte[10240];
+						
+						int length;
+						
+						//Copy the file
+						
+						log.info("Going to move the files");
+						
+						while((length = inStream.read(buffer)) > 0){
+							
+							outStream.write(buffer, 0, length);
+							
+						}
+						
+							inStream.close();
+							outStream.close();
+							
+							ExtentTestManager.reportStepPass("Log file is copied to path("+fileMovePath+") successfully and named with today's date");
+							break;
+							
+						}
+						
+					}
+				}
+				
+			}catch(FileNotFoundException e){
+				
+				ExtentTestManager.reportStepPass("Log file is not available");
+				log.info(e.getMessage());
+				
+			}catch(Exception e){
+				
+				ExtentTestManager.reportStepPass("Log file is not available");
+				log.info(e.getMessage());
+				
+			}
+			
+			
+			try{
+			
 			File directory = new File("//\\" +path);
 			for(File listOfFiles : directory.listFiles()){
 				if(listOfFiles.getName().startsWith(startValue) && listOfFiles.getName().endsWith(endValue)){
@@ -6858,6 +7252,7 @@ return element;
 				autoIT.winActivate("Choose File to Upload");
 				if(autoIT.winWaitActive("Choose File to Upload", "", 10)){
 					if(autoIT.winExists("Choose File to Upload")){
+						autoIT.sleep(1000);
 						autoIT.send(absoluteFilepath);
 						autoIT.send("{Enter}",false);	
 						log.info("File has been uploaded successfully in IE browser");
@@ -7077,10 +7472,10 @@ return element;
 		}catch(StaleElementReferenceException e1){
 				return waitUntilEnabled(getValueFromPOM, strTestObject);
 		}catch (NoSuchElementException e) {
-			ExtentTestManager.reportStepInfo("No such element '"+ getValueFromPOM +"' found or dislayed");
+			ExtentTestManager.reportStepFail(driver,"No such element '"+ getValueFromPOM +"' found or dislayed",true);
 			return false;
 		}catch (Exception e) {
-			ExtentTestManager.reportStepInfo("Exception occured while finding the element'"+ getValueFromPOM +"'. Exception is "+e);
+			ExtentTestManager.reportStepFail(driver,"Exception occured while finding the element'"+ getValueFromPOM +"'. Exception is "+e,true);
 			return false;
 		}
 
@@ -7699,6 +8094,8 @@ return element;
 				result=RRBSDBDateCompare(sqltablename, strsqlcolumnname, strsqlcondition, Date_Format,strExecEventFlag);
 			}else if(type.trim().equalsIgnoreCase("FutureDate")){
 				result=RRBSDBFutureDateCompare(sqltablename, strsqlcolumnname, strsqlcondition, Date_Format, Days_to_add,strExecEventFlag);
+			}else if(type.trim().equalsIgnoreCase("ValueExist")){
+				result=RRBSDBCheckValueExist(sqltablename, strsqlcolumnname, strsqlcondition, strExecEventFlag);
 			}else{
 				log.info("Invalid Action item from Excel");
 				ExtentTestManager.reportStepFail(driver,"Invalid Action Type described in Excel sheet - "+type, false);
@@ -8670,7 +9067,14 @@ return element;
 				return false;
 			}
 			selectedValue = new Select(selectByLocatorType(getValueFromPOM)).getFirstSelectedOption().getText();
-			if(selectedValue.trim().equalsIgnoreCase(strData.trim())){
+			// Checking the value is having the delimiters "<" and ">"			
+			if(strData.contains("<") && strData.contains(">")){
+			// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet.				
+			strData = RetrieveValueUsingAutomationKey(strData.substring(strData.indexOf("<") + 1, strData.indexOf(">")));
+			
+			}
+			
+			if(selectedValue.trim().equals(strData.trim())){
 				ExtentTestManager.reportStepPass(strTestObject +"'s selected dropdown value '"+selectedValue + "' matches with the Expected Value '"+strData+"'" );
 				WebListSelectedValue = true;
 			}else{
@@ -8737,6 +9141,8 @@ return element;
 		String Column_name = null;
 		String SQL_condition = null;
 		String noOfRowsShouldBePresent=null;
+		int No_Of_Records = 0;
+		
 		try {
 			if(strExecEventFlag==1){
 				Table_name=getTestData(testDataFilePathStatic, testComponentNameStatic,sqltablename,gblrecordsCounterStatic);
@@ -8752,16 +9158,15 @@ return element;
 			query = "select "+Column_name+" from "+Table_name+" where "+SQL_condition+"";
 			ResultSet rs_SQLServer = stmt.executeQuery(query);		
 
-			int temp=0;	
 			while(rs_SQLServer.next()){
-				temp++;
+				No_Of_Records = Integer.parseInt(rs_SQLServer.getString(1));
 			}
-
-			if(temp==(Integer.parseInt(noOfRowsShouldBePresent))){
-				ExtentTestManager.reportStepPass("Actual No. of Rows '"+temp+"' for the Query *"+query+"* matches with expected No of Rows '"+noOfRowsShouldBePresent+"'");
+			
+			if(No_Of_Records==(Integer.parseInt(noOfRowsShouldBePresent))){
+				ExtentTestManager.reportStepPass("Actual No. of Rows '"+ No_Of_Records +"' for the Query *"+query+"* matches with expected No of Rows '"+noOfRowsShouldBePresent+"'");
 				SQLDBCheckValueExist=true;
 			}else{
-				ExtentTestManager.reportStepFail(driver, "Actual No. of Rows '"+temp+"' for the Query *"+query+"* does not match with expected No of Rows '"+noOfRowsShouldBePresent+"'", false);
+				ExtentTestManager.reportStepFail(driver, "Actual No. of Rows '"+ No_Of_Records +"' for the Query *"+query+"* does not match with expected No of Rows '"+noOfRowsShouldBePresent+"'", false);
 				SQLDBCheckValueExist=true;
 			}
 
@@ -8809,7 +9214,7 @@ return element;
 			boolean fileexist=false;
 			int fileAppeartime=0;
 
-			while(fileAppeartime<30){
+			while(fileAppeartime<10){
 				Thread.sleep(1000);
 				listOfFile = directory.listFiles();
 				if(listOfFile.length != 0){
@@ -8835,7 +9240,7 @@ return element;
 
 			boolean foundstatus=false;
 			int time=0;
-			while(time<30){
+			while(time<10){
 				Thread.sleep(1000);	
 				listOfFile = directory.listFiles();
 				for(int i = 0; i<listOfFile.length; i++){
@@ -8870,7 +9275,7 @@ return element;
 			File file =new File("//\\" +path +fileName);
 			log.info(file.getAbsolutePath()+" || "+file.getName());
 			int i=0;
-			while(i<60){
+			while(i<10){
 				Thread.sleep(1000);
 				
 				try {
@@ -8892,6 +9297,7 @@ return element;
 								if(!(envVariable.trim().equalsIgnoreCase("NA"))){
 									log.info("Storing the Pattern Matched in the Env Variable '"+envVariable+"'");
 									Runtimevalue.setProperty(envVariable, m.group(0));
+									in.close();
 									ExtentTestManager.reportStepPass("The Dynamic Value '"+m.group(0)+"' is successfully stored in the Runtime Varaible '"+envVariable+"'.");
 								}
 								break;
@@ -9381,10 +9787,17 @@ return element;
 				ExtentTestManager.reportStepFail(driver,    "Required details are not provided in the data sheet.", false);
 				return false;
 			}
+			
+			// Checking the value is having the delimiters "<" and ">"
+			if(elementValue.contains("<") && elementValue.contains(">")){
+				// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet.
+				elementValue = RetrieveValueUsingAutomationKey(elementValue.substring(elementValue.indexOf("<") + 1, elementValue.indexOf(">")));
+			}
+			
 			List<WebElement> element = listSelectByLocatorType(getValueFromPOM);
 			for(WebElement checkElement : element){
 				actualValue = checkElement.getText().trim();
-				if(actualValue.equalsIgnoreCase(elementValue)){
+				if(actualValue.equals(elementValue)){
 					JavascriptExecutor js = (JavascriptExecutor) driver;
 					js.executeScript("arguments[0].style.border='2px groove white'", checkElement);
 					checkElement.click();
@@ -9392,7 +9805,7 @@ return element;
 					return true;
 				}
 			}
-			if(!actualValue.equalsIgnoreCase(elementValue)){
+			if(!actualValue.equals(elementValue)){
 				ExtentTestManager.reportStepFail(driver,"'"+elementValue +"' radio button is not clicked from the web table" , true); 
 				return false;
 			}
@@ -9422,6 +9835,7 @@ return element;
 			}
 		} catch (Exception e) { 	
 			checkElementIsDisplayed = false;
+			ExtentTestManager.reportStepFail(driver,"Element '"+strTestObject+"' is not Displayed", true);
 		}
 		return checkElementIsDisplayed;
 	}
@@ -9465,13 +9879,13 @@ return element;
 							while(matcher.find()){
 								actualText = matcher.group(1)+matcher.group(2)+matcher.group(3)+matcher.group(4)+matcher.group(5);
 								log.info("Text is matched");
-								ExtentTestManager.reportStepPass("Text '"+actualText+"' is matched with expected text in the File with Name '"+startValue+"'");
+								ExtentTestManager.reportStepPass("Text '"+actualText+"' is matched with expected text "+textValue+" in the File with Name '"+startValue+"'");
 								return true;
 							}
 
 							log.info(actualText);
 							functionStatus = false;
-							ExtentTestManager.reportStepFail(driver,""+actualText+" is not matched with the contents in the file with Name '"+startValue+"'" , false);
+							ExtentTestManager.reportStepFail(driver,""+actualText+" is not matched with the contents "+textValue+" in the file with Name '"+startValue+"'" , false);
 						}
 					}
 				}
@@ -10280,6 +10694,434 @@ return element;
 		return DynamicElementClick;
 	}
 	
+	
+	
+	public synchronized boolean enterTextByKeyboard(String getValueFromPOM, String strTestObject,String strtestData,int strExecEventFlag ){
+
+		boolean functionStatus= false;
+		String testData=null;
+
+		try {
+			if(strExecEventFlag==1)
+				testData= getTestData(testDataFilePathStatic, testComponentNameStatic, strtestData, gblrecordsCounterStatic);
+			else
+				testData=strtestData;
+
+			if(testData==null){
+				ExtentTestManager.reportStepFail(driver, "Required details are not provided in the data sheet.", false);
+				return false;
+			}
+
+			selectByLocatorType(getValueFromPOM).clear();
+			selectByLocatorType(getValueFromPOM).sendKeys("");
+			RobotKeyboard keyboard = new RobotKeyboard();
+			keyboard.splitString(testData);
+			ExtentTestManager.reportStepPass("Text '" +  testData + "' is entered successfully in the textbox '"+strTestObject+"'");
+			functionStatus=true;	
+
+		} catch (Exception e) { 	
+			ExtentTestManager.reportStepFail(driver,"Text '" + testData + "' was not entered in the textbox '"+strTestObject+"'", true);
+			log.info("No Element Found to enter text : " + e);
+		}
+		return functionStatus;
+	}
+	
+	
+	public synchronized boolean verifyContentInCSVFile(String filePath,String startFileNameValue,String endFileNameValue, String excelColumnName, String expectedText, int strExecEventFlag){
+		
+		boolean functionStatus= false;
+		
+		String path = null;
+		String expTextFromExcel = null;
+		String startWithFromExcel=null;
+		String endWithFromExcel=null;
+		String columnNameFromExcel = null;
+		File[] listOfFile = null;
+		String fileName = null;
+		File directory = null;
+		boolean found = false;
+		
+
+		try{
+			
+			if(strExecEventFlag == 1){
+				path = property.getProperty(getTestData(testDataFilePathStatic, testComponentNameStatic, filePath, strExecEventFlag));
+				startWithFromExcel = getTestData(testDataFilePathStatic, testComponentNameStatic, startFileNameValue, gblrecordsCounterStatic);
+				endWithFromExcel = getTestData(testDataFilePathStatic, testComponentNameStatic, endFileNameValue, gblrecordsCounterStatic);
+				expTextFromExcel = getTestData(testDataFilePathStatic, testComponentNameStatic, expectedText, gblrecordsCounterStatic);
+				columnNameFromExcel = getTestData(testDataFilePathStatic, testComponentNameStatic, excelColumnName, gblrecordsCounterStatic);
+				
+			}
+
+			if(path==null || startWithFromExcel == null || endWithFromExcel == null || expTextFromExcel == null || columnNameFromExcel == null){
+				ExtentTestManager.reportStepFail(driver, "Required details are not provided in test data sheet.", false);
+				return false;
+			}
+			
+			Thread.sleep(3000);
+			directory = new File("//\\" +path);
+			listOfFile = directory.listFiles();
+			for(int i = 0; i<listOfFile.length; i++){
+				if(listOfFile[i].isFile()){
+					fileName = listOfFile[i].getName();
+					if(fileName.startsWith(startWithFromExcel) && fileName.endsWith(endWithFromExcel)){
+						log.info("FileName exact match : "+fileName);
+						
+						CsvParserSettings settings = new CsvParserSettings();
+						settings.getFormat().setLineSeparator("\n");
+						settings.selectFields(columnNameFromExcel);
+						
+						CsvParser parser = new CsvParser(settings);
+						List<String[]> csvData = parser.parseAll(new FileReader(path+fileName));
+						for(String[] csvRow : csvData){
+							StringBuilder strBuilder = new StringBuilder();
+							for(String csvColumn : csvRow){
+								strBuilder.append(csvColumn).append("\t");
+								if(csvColumn.trim().equals(expTextFromExcel.trim())){
+									log.info("Expected content is available :"+csvColumn);
+									found = true;
+									break;
+									
+								}else{
+									
+									log.info("Expected content is not available :"+expTextFromExcel);
+									found = false;
+									
+								}
+						}
+					}
+				}else{
+										
+					ExtentTestManager.reportStepFail("File starting with Name '"+startWithFromExcel+"' file is not available in the directory"+directory , false);
+					functionStatus = false;
+					
+					}
+				}else{
+					
+					ExtentTestManager.reportStepFail(driver, "Expected file '"+startWithFromExcel+endWithFromExcel+"' is not available in directory", false);
+					functionStatus = false;
+					
+				}
+				
+			}
+			
+			if(found){
+				
+				ExtentTestManager.reportStepPass("Expected '"+expTextFromExcel+"' value is available on columnname '"+columnNameFromExcel+"' in '"+startWithFromExcel+endWithFromExcel+"' filename");
+				return true;
+				
+			}else{
+				
+				ExtentTestManager.reportStepFail(driver, "Expected '"+expTextFromExcel+"' value is not available in "+startWithFromExcel+".csv file by reference of columnname '"+columnNameFromExcel+"' from the directory :"+directory , false);
+				return false;
+		}
+			
+			
+			
+		}catch(Exception e){
+			
+			ExtentTestManager.reportStepFail("Exception occurred while getting the text from CSV file :"+e.getMessage() , false);
+			functionStatus = false;
+			
+		}
+		return functionStatus;
+			
+	}
+	
+	
+	public synchronized boolean verifyFileNotAvailable(String filePath, int strExecEventFlag){
+		
+		boolean functionStatus = false;
+		
+		String path = null;
+		File directory = null;
+		File[] listOfFile = null;
+		
+		try{
+			
+			if(strExecEventFlag == 1){
+				path = property.getProperty(getTestData(testDataFilePathStatic, testComponentNameStatic, filePath, strExecEventFlag));
+				
+			}
+			
+			if(path==null){
+				ExtentTestManager.reportStepFail(driver, "Required details are not provided in test data sheet.", false);
+				return false;
+			}
+			
+			directory = new File("//\\" +path);
+			listOfFile = directory.listFiles();
+			
+			if(listOfFile.length == 0){
+				
+				ExtentTestManager.reportStepPass("File is not available in expected directory '"+directory+"' path");
+				functionStatus = true;
+				
+			}else if(listOfFile.length != 0){
+				
+				ExtentTestManager.reportStepFail("File is available in expected directory '"+directory+"' path", false);
+				functionStatus = false;
+				
+			}
+			
+		}catch(Exception e){
+			
+			ExtentTestManager.reportStepFail("Exception occurred in 'verifyFileNotAvailable' function :"+e.getMessage() , false);
+			
+			
+		}
+		
+		return functionStatus;
+		
+	}
+	
+	
+	public synchronized boolean compareFilenameWithDate(String filePath,String startFileNameValue, String endFileNameValue, String datePattern, int strExecEventFlag){
+		
+		boolean functionStatus= false;
+		
+		String path = null;
+		String expDatePattern = null;
+		String startWithFromExcel=null;
+		String endWithFromExcel=null;
+
+		File[] listOfFile = null;
+		String fileName = null;
+		File directory = null;
+		
+
+		try{
+			
+			if(strExecEventFlag == 1){
+				
+				path = property.getProperty(getTestData(testDataFilePathStatic, testComponentNameStatic, filePath, strExecEventFlag));
+				expDatePattern = getTestData(testDataFilePathStatic, testComponentNameStatic, datePattern, gblrecordsCounterStatic);
+				startWithFromExcel = getTestData(testDataFilePathStatic, testComponentNameStatic, startFileNameValue, gblrecordsCounterStatic);
+				endWithFromExcel = getTestData(testDataFilePathStatic, testComponentNameStatic, endFileNameValue, gblrecordsCounterStatic);
+			}
+
+			if(path==null || startWithFromExcel == null || endWithFromExcel == null || expDatePattern == null){
+				ExtentTestManager.reportStepFail(driver, "Required details are not provided in test data sheet.", false);
+				return false;
+			}
+			
+			Thread.sleep(3000);
+			directory = new File("//\\" +path);
+			listOfFile = directory.listFiles();
+			for(int i = 0; i<listOfFile.length; i++){
+				if(listOfFile[i].isFile()){
+					fileName = listOfFile[i].getName();
+					if(fileName.startsWith(startWithFromExcel) && fileName.endsWith(endWithFromExcel)){
+						log.info("FileName exact match : "+fileName);
+						
+						
+						String splittedVal1 = fileName.split("_")[1];
+						log.info("splitted value by reference of '_' special character :"+splittedVal1);
+						String splittedVal2 = splittedVal1.split("\\.")[0];
+						log.info("splitted value by reference of '.' special character :"+splittedVal2);
+						String actualSplittedDate = splittedVal2.substring(0, 8);
+						log.info("Split the date value from splitted filename :"+actualSplittedDate);
+						String chkhhmmss = splittedVal2.substring(8, 14);
+						log.info("Split the hh:mm:ss value from splitted filename :"+chkhhmmss);
+
+						Pattern pattern = Pattern.compile("\\d+");
+						Matcher matcher = pattern.matcher(chkhhmmss);
+						
+						DateFormat dateFormat = new SimpleDateFormat(expDatePattern);
+						java.util.Date date = new Date();
+						String currentDate = dateFormat.format(date);
+						
+						if(actualSplittedDate.equals(currentDate)){
+							
+							ExtentTestManager.reportStepPass("Actual splitted date '"+actualSplittedDate+"' from CSV file "+startWithFromExcel+endWithFromExcel+" is matched with the today's date '"+currentDate+"'");
+							functionStatus = true;
+							
+							while(matcher.find()){
+								
+								System.out.println("hh:mm:ss pattern is matched successfully :"+matcher.group());
+								String exphhmmssPattern = matcher.group();
+								ExtentTestManager.reportStepPass("Expected hh:mm:ss pattern is matched successfully '"+exphhmmssPattern+"' from the CSV file "+startWithFromExcel+endWithFromExcel+" ");
+								functionStatus = true;
+								
+							}
+							
+						}else{
+							
+							ExtentTestManager.reportStepFail(driver, "Actual splitted date '"+actualSplittedDate+"' from CSV file is not matched with the today's date '"+currentDate+"'", false);
+							functionStatus = false;
+						}
+						
+					}else{
+						
+						ExtentTestManager.reportStepFail(driver, "Expected filename '"+startWithFromExcel+endWithFromExcel+"' is not available in directory", false);
+						functionStatus = false;
+						
+					}
+						
+				}else{
+					
+					ExtentTestManager.reportStepFail(driver, "Expected file '"+startWithFromExcel+endWithFromExcel+"' is not available in directory", false);
+					functionStatus = false;
+					
+				}
+			
+			}		
+			
+		}catch(Exception e){
+			
+			ExtentTestManager.reportStepFail("Exception occurred while getting the filename from CSV file :"+e.getMessage() , false);
+			functionStatus = false;
+			
+		}
+		return functionStatus;
+			
+	}
+	
+	
+	
+	public synchronized boolean compareLogFilenameWithDate(String filePath,String startFileNameValue, String endFileNameValue, String datePattern, int strExecEventFlag){
+		
+		boolean functionStatus= false;
+		
+		String path = null;
+		String expDatePattern = null;
+		String startWithFromExcel=null;
+		String endWithFromExcel=null;
+
+		File[] listOfFile = null;
+		String fileName = null;
+		File directory = null;
+		
+
+		try{
+			
+			if(strExecEventFlag == 1){
+				
+				path = property.getProperty(getTestData(testDataFilePathStatic, testComponentNameStatic, filePath, strExecEventFlag));
+				expDatePattern = getTestData(testDataFilePathStatic, testComponentNameStatic, datePattern, gblrecordsCounterStatic);
+				startWithFromExcel = getTestData(testDataFilePathStatic, testComponentNameStatic, startFileNameValue, gblrecordsCounterStatic);
+				endWithFromExcel = getTestData(testDataFilePathStatic, testComponentNameStatic, endFileNameValue, gblrecordsCounterStatic);
+			}
+
+			if(path==null || startWithFromExcel == null || endWithFromExcel == null || expDatePattern == null){
+				ExtentTestManager.reportStepFail(driver, "Required details are not provided in test data sheet.", false);
+				return false;
+			}
+			
+			Thread.sleep(3000);
+			directory = new File("//\\" +path);
+			listOfFile = directory.listFiles();
+			for(int i = 0; i<listOfFile.length; i++){
+				if(listOfFile[i].isFile()){
+					fileName = listOfFile[i].getName();
+					if(fileName.startsWith(startWithFromExcel) && fileName.endsWith(endWithFromExcel)){
+						log.info("FileName exact match : "+fileName);
+						
+						String splittedVal3 = fileName.split("_")[2];
+						String splittedVal4 = fileName.split("_")[3];
+						
+						
+						String actualSplittedDate = splittedVal3;
+						log.info("Split the date value from splitted filename :"+actualSplittedDate);
+
+						Pattern pattern = Pattern.compile("\\d+");
+						Matcher matcher = pattern.matcher(splittedVal4);
+						
+						DateFormat dateFormat = new SimpleDateFormat(expDatePattern);
+						java.util.Date date = new Date();
+						String currentDate = dateFormat.format(date);
+						
+						if(actualSplittedDate.equals(currentDate)){
+							
+							ExtentTestManager.reportStepPass("Actual splitted date '"+actualSplittedDate+"' from "+startWithFromExcel+endWithFromExcel+" file is matched with the today's date '"+currentDate+"'");
+							functionStatus = true;
+							
+							while(matcher.find()){
+								
+								log.info("hh:mm:ss pattern is matched successfully :"+matcher.group());
+								String exphhmmssPattern = matcher.group();
+								ExtentTestManager.reportStepPass("Expected hh:mm:ss pattern is matched successfully '"+exphhmmssPattern+"' from file "+startWithFromExcel+endWithFromExcel+" ");
+								functionStatus = true;
+								
+							}
+							
+						}else{
+							
+							ExtentTestManager.reportStepFail(driver, "Actual splitted date '"+actualSplittedDate+"' from "+startWithFromExcel+endWithFromExcel+" file is not matched with the today's date '"+currentDate+"'", false);
+							functionStatus = false;
+						}
+						
+					}else{
+						
+						ExtentTestManager.reportStepFail(driver, "Expected filename '"+startWithFromExcel+endWithFromExcel+"' is not available in directory", false);
+						functionStatus = false;
+						
+					}
+						
+				}else{
+					
+					ExtentTestManager.reportStepFail(driver, "Expected file '"+startWithFromExcel+endWithFromExcel+"' is not available in directory", false);
+					functionStatus = false;
+					
+				}
+			
+			}		
+			
+		}catch(Exception e){
+			
+			ExtentTestManager.reportStepFail("Exception occurred while getting the filename from CSV file :"+e.getMessage() , false);
+			functionStatus = false;
+			
+		}
+		return functionStatus;
+			
+	}
+	
+	
+	public String getOSBitValueFromCMD() {
+		
+		try{
+			String getBitValue = "wmic os get osarchitecture";	
+			
+			Runtime rt = Runtime.getRuntime();
+			Process process = rt.exec(getBitValue);
+			
+			BufferedReader buReaderInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
+			BufferedReader buReaderError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+			
+			String getOSBitFromCMD = null;
+			log.info("Output of input command");
+			while((getOSBitFromCMD = buReaderInput.readLine()) != null){
+				
+				String bitToString = getOSBitFromCMD.toString();
+				log.info("Windows Bit Value :"+bitToString);
+				
+				if(bitToString.contains("bit")){
+				System.out.println("Command value contains with Bit");	
+				Pattern pattern = Pattern.compile("(.*)(.*)-bit");
+				Matcher matcher = pattern.matcher(bitToString);
+				
+				while(matcher.find()){
+					String windowsBitValue = matcher.group(1);
+					return windowsBitValue;
+								}
+							}
+					   }
+				
+			while((getOSBitFromCMD = buReaderError.readLine()) != null){
+				System.out.println("Output of error Stream");
+				System.out.println("ReadLine Error :"+getOSBitFromCMD);
+				}
+			
+		}catch(Exception e){
+			
+			e.printStackTrace();
+		}
+		
+		return null;
+	}
+	
+	
 	/*----------------------------------------- PRAVEEN ***END***-----------------------------------------*/
 
 
@@ -10326,6 +11168,13 @@ return element;
 				ExtentTestManager.reportStepFail(driver, "Required details are not provided in the data sheet.", false);
 				return false;
 			}
+
+			// Checking the value is having the delimiters "<" and ">"			
+			if(strData.contains("<") && strData.contains(">")){
+			// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet.
+			strData = RetrieveValueUsingAutomationKey(strData.substring(strData.indexOf("<") + 1, strData.indexOf(">")));
+			}
+			
 			new Select(selectByLocatorType(getValueFromPOM)).selectByValue(strData);
 			ExtentTestManager.reportStepPass("Item '" +  strData + "' is selected from the  '"+strTestObject+"' List box successfully" );
 			WebListSelect=true;
@@ -10809,20 +11658,89 @@ return element;
 		String actualResult=null;
 		String strData=null;
 		boolean WebElementMultilineTextCompare=false;
+		String[] splitted_text1 = null;
+		String[] splitted_text2 = null;
+		String valueFromResxFile = null;
+		String initialvalue = "";
 
 		try{
 			if(strExecEventFlag==1){
 				strData=getTestData(testDataFilePathStatic, testComponentNameStatic,strColumnName,gblrecordsCounterStatic);
 			}
+		
+			if(!(strData.contains("<") && strData.contains(">"))){
+				//ExtentTestManager.reportStepFail(driver,"The text : '"+ testData +"' is not present in any of the resource files.",true);
+				valueFromResxFile = strData;
+				//functionStatus=false;
+			} else {
+
+			if(strData.contains(";")){
+				
+				splitted_text1 = strData.split("\\;");
+				
+				for(int k = 0; k <= splitted_text1.length - 1; k++) {
+			
+					if(splitted_text1[k].contains("|")){
+						
+						splitted_text2 = splitted_text1[k].split("\\|");
+						
+						log.info("Resx Key : "+ splitted_text2[0].substring(splitted_text2[0].indexOf("<") + 1, splitted_text2[0].indexOf(">")));
+						
+						valueFromResxFile = RetrieveValueUsingAutomationKey(splitted_text2[0].substring(splitted_text2[0].indexOf("<") + 1, splitted_text2[0].indexOf(">")));
+	
+						if(valueFromResxFile.contains("{") && valueFromResxFile.contains("}")){
+							for(int i = 1; i <= splitted_text2.length - 1; i++) {
+								
+								valueFromResxFile = valueFromResxFile.replace("{"+ Integer.toString(i-1) +"}", splitted_text2[i]);
+								
+							}
+						} else {
+							valueFromResxFile = valueFromResxFile + splitted_text2[1];
+						}
+					
+					} else {
+						valueFromResxFile = RetrieveValueUsingAutomationKey(splitted_text1[k].substring(splitted_text1[k].indexOf("<") + 1, splitted_text1[k].indexOf(">")));
+					}
+					
+					initialvalue = initialvalue + valueFromResxFile;
+				}
+			
+				valueFromResxFile = initialvalue;
+				
+			} else {
+			
+				if(strData.contains("|")){
+					
+					splitted_text2 = strData.split("\\|");
+					
+					log.info("Resx Key : "+ splitted_text2[0].substring(splitted_text2[0].indexOf("<") + 1, splitted_text2[0].indexOf(">")));
+					
+					valueFromResxFile = RetrieveValueUsingAutomationKey(splitted_text2[0].substring(splitted_text2[0].indexOf("<") + 1, splitted_text2[0].indexOf(">")));
+	
+					if(valueFromResxFile.contains("{") && valueFromResxFile.contains("}")){
+						for(int i = 1; i <= splitted_text2.length - 1; i++) {
+							
+							valueFromResxFile = valueFromResxFile.replace("{"+ Integer.toString(i-1) +"}", splitted_text2[i]);
+							
+						}
+					} else {
+						valueFromResxFile = valueFromResxFile + splitted_text2[1];
+					}
+				
+				} else {
+					valueFromResxFile = RetrieveValueUsingAutomationKey(strData.substring(strData.indexOf("<") + 1, strData.indexOf(">")));
+				}
+			}
+		}
 			actualResult = selectByLocatorType(getValueFromPOM).getText();
 			actualResult=actualResult.replaceAll("[\n\r]", "");
 
-			if((actualResult.trim()).equalsIgnoreCase(strData.trim())){
+			if((actualResult.trim()).equalsIgnoreCase(valueFromResxFile.trim())){
 
-				ExtentTestManager.reportStepPass("Actual Text '" +actualResult+ "' matches with the Expected value '"+strData+ "' in the input field '"+strTestObject+"'");
+				ExtentTestManager.reportStepPass("Actual Text '" +actualResult+ "' matches with the Expected value '"+valueFromResxFile+ "' in the input field '"+strTestObject+"'");
 				WebElementMultilineTextCompare=true;
 			}else{
-				ExtentTestManager.reportStepFail(driver, "Actual Text '" +actualResult+ "' does not match with the Expected value '"+strData+ "' in the input field '"+strTestObject+"'", true);
+				ExtentTestManager.reportStepFail(driver, "Actual Text '" +actualResult+ "' does not match with the Expected value '"+valueFromResxFile+ "' in the input field '"+strTestObject+"'", true);
 				WebElementMultilineTextCompare=false;
 			}
 		} catch (Exception e){
@@ -11061,6 +11979,9 @@ return element;
 		String strData=null; 
 		String filename=null;
 		String filepath = null;
+		AutoItX autoIT = null;
+		String absoluteFilepath = null;
+		File file = null;
 		String getBrowserName = browserProperty.getProperty("testBrowser");
 		
 		try {
@@ -11073,21 +11994,38 @@ return element;
 			
 			filepath = strData + filename;
 			log.info("filepath is "+filepath);
-			//Set the Path for DLL
-			File file = new File("lib", "jacob-1.14.3-x86.dll");
+			
+			if(getOSBitValueFromCMD().contains("32")){
+			
+			//Set the DLL Path for 32-bit
+			file = new File("lib", "jacob-1.14.3-x86.dll");
 			//Get the absolute path for DLL
 			System.setProperty(LibraryLoader.JACOB_DLL_PATH, file.getAbsolutePath());
 			//Get the Jacob DLL path from local
-			File jacobDLLPath = new File(property.getProperty("AutoIT_Jacob_DLL_Path"));
+			File jacobDLLPath = new File(property.getProperty("AutoIT_Jacob_DLL_Path_32Bit"));
 			String dLLAbsolutePath = jacobDLLPath.getAbsolutePath();
 			//Get the Jacob DLL absolute path
 			System.setProperty(LibraryLoader.JACOB_DLL_PATH, dLLAbsolutePath);
 			LibraryLoader.loadJacobLibrary();
+			
+			}else if(getOSBitValueFromCMD().contains("64")){
+				
+				//Set the DLL Path for 64-bit
+				file = new File("lib", "jacob-1.14.3-x64.dll");
+				//Get the absolute path for DLL
+				System.setProperty(LibraryLoader.JACOB_DLL_PATH, file.getAbsolutePath());
+				//Get the Jacob DLL path from local
+				File jacobDLLPath = new File(property.getProperty("AutoIT_Jacob_DLL_Path_64Bit"));
+				String dLLAbsolutePath = jacobDLLPath.getAbsolutePath();
+				//Get the Jacob DLL absolute path
+				System.setProperty(LibraryLoader.JACOB_DLL_PATH, dLLAbsolutePath);
+				LibraryLoader.loadJacobLibrary();
+			}
+			
 			File localPath = new File(filepath);
 			//Get the upload file absolute path
-			String absoluteFilepath = localPath.getAbsolutePath();
-			AutoItX autoIT = new AutoItX();
-			
+			absoluteFilepath = localPath.getAbsolutePath();
+			autoIT = new AutoItX();
 			log.info("browser is "+getBrowserName);
 
 			//Based on Browsers AutoIT tool will be executed
@@ -11095,6 +12033,7 @@ return element;
 				autoIT.winActivate("Choose File to Upload");
 				if(autoIT.winWaitActive("Choose File to Upload", "", 10)){
 					if(autoIT.winExists("Choose File to Upload")){
+						autoIT.sleep(1000);
 						autoIT.send(absoluteFilepath);
 						autoIT.send("{Enter}",false);	
 						log.info("File has been uploaded successfully in IE browser");
@@ -11155,7 +12094,7 @@ return element;
 			JSHsession.setPassword(password);
 			Properties JSHProperties=new Properties();
 			JSHProperties.put("StrictHostKeyChecking", "no");
-			//JSHsession.setConfig("PreferredAuthentications","publickey,keyboard-interactive,password");
+			JSHsession.setConfig("PreferredAuthentications","publickey,keyboard-interactive,password");
 			JSHsession.setConfig(JSHProperties);
 			JSHsession.connect();
 
@@ -11526,6 +12465,10 @@ return element;
 		String attributeID = null;
 		String actualValueFromTable = null;
 		String actualvalue = null;
+		String[] splitted_text = null;
+		String[] splitted_text_value = null;
+		String[] splitted_expected_value = null;
+		
 		try{	
 			if(strExecEventFlag == 1){
 				primaryColumnName = getTestData(testDataFilePathStatic, testComponentNameStatic, primaryCol,gblrecordsCounterStatic);
@@ -11539,12 +12482,32 @@ return element;
 				return false;
 			}
 
+			// Checking the value is having the delimiters "<" and ">"
+			if(primaryColumnName.contains("<") && primaryColumnName.contains(">")){
+				// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet.			
+				primaryColumnName = RetrieveValueUsingAutomationKey(primaryColumnName.substring(primaryColumnName.indexOf("<") + 1, primaryColumnName.indexOf(">")));
+			}
+			
+			// Checking the value is having the delimiter ";"
+			if(expectedRowValue.contains(";")){
+				// Splitting the data with ";" and storing the values in an array
+				splitted_expected_value = expectedRowValue.split("\\;");
+				// Checking the value is having the delimiter "<" and ">"
+				if(splitted_expected_value[0].contains("<") && splitted_expected_value[0].contains(">")){
+				// Getting the value of the key name which is present in between the delimiters "<" and ">" of the first item in an array from the resource management sheet
+					expectedRowValue = RetrieveValueUsingAutomationKey(splitted_expected_value[0].substring(splitted_expected_value[0].indexOf("<") + 1, splitted_expected_value[0].indexOf(">"))) + splitted_expected_value[1];
+				}
+			} else if(expectedRowValue.contains("<") && expectedRowValue.contains(">")){
+				// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet
+				expectedRowValue = RetrieveValueUsingAutomationKey(expectedRowValue.substring(expectedRowValue.indexOf("<") + 1, expectedRowValue.indexOf(">")));
+			}
+			
 			attributeID = selectByLocatorType(getValueFromPOM).getAttribute("id");
 			List<WebElement> headerColumns = driver.findElements(By.xpath("//*[@id='"+attributeID+"']/thead/tr[1]/th"));
 			int findPrimaryColumn = 0;
 			for(int headerCounterPrimaryColumn = 1;headerCounterPrimaryColumn <= headerColumns.size(); headerCounterPrimaryColumn++){
 				String GetTitleHeaders = driver.findElement(By.xpath("//*[@id='"+attributeID+"']/thead/tr[1]/th["+ headerCounterPrimaryColumn +"]")).getText();
-				if(GetTitleHeaders.equalsIgnoreCase(primaryColumnName)){
+				if(GetTitleHeaders.equals(primaryColumnName)){
 					findPrimaryColumn = headerCounterPrimaryColumn;
 					break;
 				}
@@ -11556,9 +12519,55 @@ return element;
 			String[] headernames=secColumnName.split("\\|");
 			String[] headervalues=expectedTextFromTable.split("\\|");
 			Hashtable<String, String> hstable = new Hashtable<String, String>();
-			for( int hdrcount = 0; hdrcount <= headernames.length - 1; hdrcount++)
-			{
-				hstable.put(headernames[hdrcount], headervalues[hdrcount]);
+			for( int hdrcount = 0; hdrcount <= headernames.length - 1; hdrcount++){
+					// Checking the items in the array is having the delimiter ";"
+					if(headernames[hdrcount].contains(";")){
+					// Splitting the header names data with ";" and storing the values in an array
+					splitted_text = headernames[hdrcount].split("\\;");
+					// Getting the value of the key name which is present in between the delimiters "<" and ">" of the first item in an array from the resource management sheet
+					headernames[hdrcount] = RetrieveValueUsingAutomationKey(splitted_text[0].substring(splitted_text[0].indexOf("<") + 1, splitted_text[0].indexOf(">")));
+					// Concatenates the value of second item in an array from properties file. 
+					headernames[hdrcount] = headernames[hdrcount] + " " + property.getProperty(splitted_text[1]);
+					// Checking the headervalues is having the delimiters "<" and ">"
+					if(headervalues[hdrcount].contains(";")){
+						// Splitting the header names data with ";" and storing the values in an array
+						splitted_text_value = headervalues[hdrcount].split("\\;");
+						// Checking the headervalues is having the delimiters "<" and ">"
+						if(splitted_text_value[0].contains("<") && splitted_text_value[0].contains(">")){
+							// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet and concatenates the second item in an array
+							headervalues[hdrcount] = RetrieveValueUsingAutomationKey(splitted_text_value[0].substring(splitted_text_value[0].indexOf("<") + 1, splitted_text_value[0].indexOf(">"))) + splitted_text_value[1];
+						}
+						
+					} else {
+						// Checking the headervalues is having the delimiters "<" and ">"
+						if(headervalues[hdrcount].contains("<") && headervalues[hdrcount].contains(">")){
+							// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet
+							headervalues[hdrcount] = RetrieveValueUsingAutomationKey(headervalues[hdrcount].substring(headervalues[hdrcount].indexOf("<") + 1, headervalues[hdrcount].indexOf(">")));
+						}
+					}
+					hstable.put(headernames[hdrcount], headervalues[hdrcount]);
+					} else{
+							// Getting the headers key name which is present in between the delimiters "<" and ">" from resource management sheet
+							headernames[hdrcount] = RetrieveValueUsingAutomationKey(headernames[hdrcount].substring(headernames[hdrcount].indexOf("<") + 1, headernames[hdrcount].indexOf(">")));
+							// Checking the headervalues is having the delimiters "<" and ">"
+							if(headervalues[hdrcount].contains(";")){
+								// Splitting the header names data with ";" and storing the values in an array
+								splitted_text_value = headervalues[hdrcount].split("\\;");
+								// Checking the headervalues is having the delimiters "<" and ">"
+								if(splitted_text_value[0].contains("<") && splitted_text_value[0].contains(">")){
+									// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet and concatenates the second item in an array
+									headervalues[hdrcount] = RetrieveValueUsingAutomationKey(splitted_text_value[0].substring(splitted_text_value[0].indexOf("<") + 1, splitted_text_value[0].indexOf(">"))) + splitted_text_value[1];
+								}
+								
+							} else {
+								// Checking the headervalues is having the delimiters "<" and ">"
+								if(headervalues[hdrcount].contains("<") && headervalues[hdrcount].contains(">")){
+									// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet
+									headervalues[hdrcount] = RetrieveValueUsingAutomationKey(headervalues[hdrcount].substring(headervalues[hdrcount].indexOf("<") + 1, headervalues[hdrcount].indexOf(">")));
+								}
+							}
+							hstable.put(headernames[hdrcount], headervalues[hdrcount]);
+					}
 			}
 
 			Hashtable<String, Integer> hstableheaders = new Hashtable<String, Integer>();
@@ -11568,7 +12577,8 @@ return element;
 				for( int headercolumn = 1; headercolumn <= headerColumns.size(); headercolumn++)
 				{
 					String headername = driver.findElement(By.xpath("//*[@id='"+attributeID+"']/thead/tr[1]/th["+ headercolumn +"]")).getText();
-					if(headernames[hdrcount].equalsIgnoreCase(headername)){
+					
+					if(headernames[hdrcount].equals(headername)){
 						hstableheaders.put(headernames[hdrcount], headercolumn);
 						iheaderexist = 1;
 						break;
@@ -11634,6 +12644,10 @@ return element;
 		String actualValueFromTable_1 = null;
 		String actualValueFromTable_2 = null;
 		String actualvalue = null;
+		String[] splitted_text = null;
+		String[] splitted_text_value = null;
+		String[] splitted_expected_value = null;
+		
 		try{	
 			// Get the values from excel sheet to find the rows and columns from web table
 			if(strExecEventFlag == 1){
@@ -11651,7 +12665,38 @@ return element;
 				return false;
 			}
 
+			// Checking the value is having the delimiter ";"
+			if(expectedRowValue_1.contains(";")){
+				// Splitting the data with ";" and storing the values in an array
+				splitted_expected_value = expectedRowValue_1.split("\\;");
+				// Checking the value is having the delimiter "<" and ">"
+				if(splitted_expected_value[0].contains("<") && splitted_expected_value[0].contains(">")){
+				// Getting the value of the key name which is present in between the delimiters "<" and ">" of the first item in an array from the resource management sheet
+				expectedRowValue_1 = RetrieveValueUsingAutomationKey(splitted_expected_value[0].substring(splitted_expected_value[0].indexOf("<") + 1, splitted_expected_value[0].indexOf(">"))) + splitted_expected_value[1];
+				}
+			} else if(expectedRowValue_1.contains("<") && expectedRowValue_1.contains(">")){
+				// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet
+				expectedRowValue_1 = RetrieveValueUsingAutomationKey(expectedRowValue_1.substring(expectedRowValue_1.indexOf("<") + 1, expectedRowValue_1.indexOf(">")));
+			}	
 
+			// Checking the value is having the delimiter "<" and ">"
+			if(expectedRowValue_2.contains("<") && expectedRowValue_2.contains(">")){
+				// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet
+				expectedRowValue_2 = RetrieveValueUsingAutomationKey(expectedRowValue_2.substring(expectedRowValue_2.indexOf("<") + 1, expectedRowValue_2.indexOf(">")));
+			}
+			
+			// Checking the value is having the delimiter "<" and ">"
+			if(primaryColumnName_1.contains("<") && primaryColumnName_1.contains(">")){
+				// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet
+				primaryColumnName_1 = RetrieveValueUsingAutomationKey(primaryColumnName_1.substring(primaryColumnName_1.indexOf("<") + 1, primaryColumnName_1.indexOf(">")));
+			}
+			
+			// Checking the value is having the delimiter "<" and ">"
+			if(primaryColumnName_2.contains("<") && primaryColumnName_2.contains(">")){
+				// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet
+				primaryColumnName_2 = RetrieveValueUsingAutomationKey(primaryColumnName_2.substring(primaryColumnName_2.indexOf("<") + 1, primaryColumnName_2.indexOf(">")));
+			}
+			
 			//Get the ID from xpath(whole web table) 
 			attributeID = selectByLocatorType(getValueFromPOM).getAttribute("id");
 
@@ -11662,7 +12707,7 @@ return element;
 
 			for(int headerCounterPrimaryColumn = 1;headerCounterPrimaryColumn <= headerColumns.size(); headerCounterPrimaryColumn++){
 				String GetTitleHeaders = driver.findElement(By.xpath("//*[@id='"+attributeID+"']/thead/tr[1]/th["+ headerCounterPrimaryColumn +"]")).getText();
-				if(GetTitleHeaders.equalsIgnoreCase(primaryColumnName_1)){
+				if(GetTitleHeaders.equals(primaryColumnName_1)){
 					findPrimaryColumn_1 = headerCounterPrimaryColumn;
 					break;
 				}
@@ -11677,7 +12722,7 @@ return element;
 
 			for(int headerCounterPrimaryColumn = 1;headerCounterPrimaryColumn <= headerColumns.size(); headerCounterPrimaryColumn++){
 				String GetTitleHeaders = driver.findElement(By.xpath("//*[@id='"+attributeID+"']/thead/tr[1]/th["+ headerCounterPrimaryColumn +"]")).getText();
-				if(GetTitleHeaders.equalsIgnoreCase(primaryColumnName_2)){
+				if(GetTitleHeaders.equals(primaryColumnName_2)){
 					findPrimaryColumn_2 = headerCounterPrimaryColumn;
 					break;
 				}
@@ -11695,7 +12740,51 @@ return element;
 
 			for( int hdrcount = 0; hdrcount <= headernames.length - 1; hdrcount++)
 			{
-				hstable.put(headernames[hdrcount], headervalues[hdrcount]);
+					if(headernames[hdrcount].contains(";")){
+					splitted_text = headernames[hdrcount].split("\\;");
+					headernames[hdrcount] = RetrieveValueUsingAutomationKey(splitted_text[0].substring(splitted_text[0].indexOf("<") + 1, splitted_text[0].indexOf(">")));
+					headernames[hdrcount] = headernames[hdrcount] + " " + property.getProperty(splitted_text[1]);
+					// Checking the items in the array is having the delimiter ";"
+					if(headervalues[hdrcount].contains(";")){
+						// Splitting the header names data with ";" and storing the values in an array
+						splitted_text_value = headervalues[hdrcount].split("\\;");
+						// Checking the headervalues is having the delimiters "<" and ">"
+						if(splitted_text_value[0].contains("<") && splitted_text_value[0].contains(">")){
+							// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet and concatenates the second item in an array
+							headervalues[hdrcount] = RetrieveValueUsingAutomationKey(splitted_text_value[0].substring(splitted_text_value[0].indexOf("<") + 1, splitted_text_value[0].indexOf(">"))) + splitted_text_value[1];
+						}
+						
+					} else {
+						// Checking the headervalues is having the delimiters "<" and ">"
+						if(headervalues[hdrcount].contains("<") && headervalues[hdrcount].contains(">")){
+							// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet
+							headervalues[hdrcount] = RetrieveValueUsingAutomationKey(headervalues[hdrcount].substring(headervalues[hdrcount].indexOf("<") + 1, headervalues[hdrcount].indexOf(">")));
+						}
+					}
+
+					hstable.put(headernames[hdrcount], headervalues[hdrcount]);
+					} else{
+							// Getting the headers key name which is present in between the delimiters "<" and ">" from resource management sheet
+							headernames[hdrcount] = RetrieveValueUsingAutomationKey(headernames[hdrcount].substring(headernames[hdrcount].indexOf("<") + 1, headernames[hdrcount].indexOf(">")));
+							// Checking the items in the array is having the delimiter ";"
+							if(headervalues[hdrcount].contains(";")){
+								// Splitting the header names data with ";" and storing the values in an array
+								splitted_text_value = headervalues[hdrcount].split("\\;");
+								// Checking the headervalues is having the delimiters "<" and ">"
+								if(splitted_text_value[0].contains("<") && splitted_text_value[0].contains(">")){
+									// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet and concatenates the second item in an array
+									headervalues[hdrcount] = RetrieveValueUsingAutomationKey(splitted_text_value[0].substring(splitted_text_value[0].indexOf("<") + 1, splitted_text_value[0].indexOf(">"))) + splitted_text_value[1];
+								}
+								
+							} else {
+								// Checking the headervalues is having the delimiters "<" and ">"
+								if(headervalues[hdrcount].contains("<") && headervalues[hdrcount].contains(">")){
+									// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet
+									headervalues[hdrcount] = RetrieveValueUsingAutomationKey(headervalues[hdrcount].substring(headervalues[hdrcount].indexOf("<") + 1, headervalues[hdrcount].indexOf(">")));
+								}
+							}
+							hstable.put(headernames[hdrcount], headervalues[hdrcount]);
+					}
 			}
 
 			Hashtable<String, Integer> hstableheaders = new Hashtable<String, Integer>();
@@ -11705,7 +12794,7 @@ return element;
 				for( int headercolumn = 1; headercolumn <= headerColumns.size(); headercolumn++)
 				{
 					String headername = driver.findElement(By.xpath("//*[@id='"+attributeID+"']/thead/tr[1]/th["+ headercolumn +"]")).getText();
-					if(headernames[hdrcount].equalsIgnoreCase(headername)){
+					if(headernames[hdrcount].equals(headername)){
 						hstableheaders.put(headernames[hdrcount], headercolumn);
 						iheaderexist = 1;
 						break;
@@ -11841,6 +12930,9 @@ return element;
 
 		String Expected_value = null;
 		String Current_Date=null;
+		
+		String[] splitted_text = null;
+		
 		try{	
 
 			if(strExecEventFlag == 1){
@@ -11854,6 +12946,12 @@ return element;
 				ExtentTestManager.reportStepFail(driver, "Required details are not provided in the data sheet.", false);
 				return false;
 			}
+			
+			// Checking the value is having the delimiters "<" and ">"
+			if(primaryColumnName.contains("<") && primaryColumnName.contains(">")){
+				// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet.
+				primaryColumnName = RetrieveValueUsingAutomationKey(primaryColumnName.substring(primaryColumnName.indexOf("<") + 1, primaryColumnName.indexOf(">")));
+			}
 
 			//Get the ID from xpath(whole web table) 
 			attributeID = selectByLocatorType(getValueFromPOM).getAttribute("aria-labelledby");
@@ -11861,7 +12959,7 @@ return element;
 			int findPrimaryColumn = 0;
 			for(int headerCounterPrimaryColumn = 1;headerCounterPrimaryColumn <= headerColumns.size(); headerCounterPrimaryColumn++){
 				String GetTitleHeaders = driver.findElement(By.xpath("//table[@aria-labelledby='"+attributeID+"']/thead/tr[1]/th["+ headerCounterPrimaryColumn +"]")).getText();
-				if(GetTitleHeaders.trim().equalsIgnoreCase(primaryColumnName.trim())){
+				if(GetTitleHeaders.trim().equals(primaryColumnName.trim())){
 					findPrimaryColumn = headerCounterPrimaryColumn;
 					break;
 				}
@@ -11879,7 +12977,37 @@ return element;
 
 			for( int hdrcount = 0; hdrcount <= headernames.length - 1; hdrcount++)
 			{
-				hstable.put(headernames[hdrcount], headervalues[hdrcount]);
+					// Checking the items in the array is having the delimiter ";"
+					if(headernames[hdrcount].contains(";")){
+					// Splitting the header names data with ";" and storing the values in an array
+					splitted_text = headernames[hdrcount].split("\\;");
+					// Getting the value of the key name which is present in between the delimiters "<" and ">" of the first item in an array from the resource management sheet
+					headernames[hdrcount] = RetrieveValueUsingAutomationKey(splitted_text[0].substring(splitted_text[0].indexOf("<") + 1, splitted_text[0].indexOf(">")));
+					// Concatenates the value of second item in an array from properties file.
+					headernames[hdrcount] = headernames[hdrcount] + " " + property.getProperty(splitted_text[1]);
+					// Checking the headervalues is having the delimiters "<" and ">"
+					if(headervalues[hdrcount].contains("<") && headervalues[hdrcount].contains(">")){
+						// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet
+						headervalues[hdrcount] = RetrieveValueUsingAutomationKey(headervalues[hdrcount].substring(headervalues[hdrcount].indexOf("<") + 1, headervalues[hdrcount].indexOf(">")));
+					}
+					hstable.put(headernames[hdrcount], headervalues[hdrcount]);
+					} else{
+						
+							if(headernames[hdrcount].contains("#")){
+								String[] headercolumnnames = headernames[hdrcount].split("#");
+								headernames[hdrcount] = RetrieveValueUsingAutomationKey(headercolumnnames[0].substring(headercolumnnames[0].indexOf("<") + 1, headercolumnnames[0].indexOf(">")))+ " " + RetrieveValueUsingAutomationKey(headercolumnnames[1].substring(headercolumnnames[1].indexOf("<") + 1, headercolumnnames[1].indexOf(">")));
+							} else {
+							// Getting the headers key name which is present in between the delimiters "<" and ">" from resource management sheet
+							headernames[hdrcount] = RetrieveValueUsingAutomationKey(headernames[hdrcount].substring(headernames[hdrcount].indexOf("<") + 1, headernames[hdrcount].indexOf(">")));
+							}
+							// Checking the headervalues is having the delimiters "<" and ">"
+							if(headervalues[hdrcount].contains("<") && headervalues[hdrcount].contains(">")){
+								// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet
+								headervalues[hdrcount] = RetrieveValueUsingAutomationKey(headervalues[hdrcount].substring(headervalues[hdrcount].indexOf("<") + 1, headervalues[hdrcount].indexOf(">")));
+							}
+							hstable.put(headernames[hdrcount], headervalues[hdrcount]);
+					}
+
 			}
 
 			Hashtable<String, Integer> hstableheaders = new Hashtable<String, Integer>();
@@ -11889,7 +13017,7 @@ return element;
 				for( int headercolumn = 1; headercolumn <= headerColumns.size(); headercolumn++)
 				{
 					String headername = driver.findElement(By.xpath("//table[@aria-labelledby='"+attributeID+"']/thead/tr[1]/th["+ headercolumn +"]")).getText();
-					if(headernames[hdrcount].trim().equalsIgnoreCase(headername.trim())){
+					if(headernames[hdrcount].trim().equals(headername.trim())){
 						hstableheaders.put(headernames[hdrcount], headercolumn);
 						iheaderexist = 1;
 						break;
@@ -12440,6 +13568,8 @@ return element;
 		String attributeID = null;
 		String actualValueFromTable = null;
 		String actualvalue = null;
+		String[] splitted_text = null;
+		
 		try{	
 			// Get the values from excel sheet to find the rows and columns from web table
 			if(strExecEventFlag == 1){
@@ -12455,6 +13585,13 @@ return element;
 				ExtentTestManager.reportStepFail(driver,    "Required details are not provided in the data sheet.", false);
 				return false;
 			}
+			
+			// Checking the value is having the delimiters "<" and ">"
+			if(primaryColumnName.contains("<") && primaryColumnName.contains(">")){
+				// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet.
+				primaryColumnName = RetrieveValueUsingAutomationKey(primaryColumnName.substring(primaryColumnName.indexOf("<") + 1, primaryColumnName.indexOf(">")));
+			}
+			
 			//Get the ID from xpath(whole web table) 
 			attributeID = selectByLocatorType(getValueFromPOM).getAttribute("id");
 			List<WebElement> headerColumns = driver.findElements(By.xpath("//*[@id='"+attributeID+"']//thead/tr[1]/th"));
@@ -12462,7 +13599,7 @@ return element;
 
 			for(int headerCounterPrimaryColumn = 1;headerCounterPrimaryColumn <= headerColumns.size(); headerCounterPrimaryColumn++){
 				String GetTitleHeaders = driver.findElement(By.xpath("//*[@id='"+attributeID+"']//thead/tr[1]/th["+ headerCounterPrimaryColumn +"]")).getText();
-				if(GetTitleHeaders.equalsIgnoreCase(primaryColumnName)){
+				if(GetTitleHeaders.equals(primaryColumnName)){
 					findPrimaryColumn = headerCounterPrimaryColumn;
 					break;
 				}
@@ -12476,9 +13613,32 @@ return element;
 			String[] headervalues=expectedTextFromTable.split("\\|");
 			Hashtable<String, String> hstable = new Hashtable<String, String>();
 			for( int hdrcount = 0; hdrcount <= headernames.length - 1; hdrcount++)
-			{
-				hstable.put(headernames[hdrcount], headervalues[hdrcount]);
-			}
+				{
+					// Checking the items in the array is having the delimiter ";"
+					if(headernames[hdrcount].contains(";")){
+					// Splitting the header names data with ";" and storing the values in an array
+					splitted_text = headernames[hdrcount].split("\\;");
+					// Getting the value of the key name which is present in between the delimiters "<" and ">" of the first item in an array from the resource management sheet
+					headernames[hdrcount] = RetrieveValueUsingAutomationKey(splitted_text[0].substring(splitted_text[0].indexOf("<") + 1, splitted_text[0].indexOf(">")));
+					// Concatenates the value of second item in an array from properties file.
+					headernames[hdrcount] = headernames[hdrcount] + " " + property.getProperty(splitted_text[1]);
+					// Checking the headervalues is having the delimiters "<" and ">"
+					if(headervalues[hdrcount].contains("<") && headervalues[hdrcount].contains(">")){
+						// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet
+						headervalues[hdrcount] = RetrieveValueUsingAutomationKey(headervalues[hdrcount].substring(headervalues[hdrcount].indexOf("<") + 1, headervalues[hdrcount].indexOf(">")));
+					}
+					hstable.put(headernames[hdrcount], headervalues[hdrcount]);
+					} else{
+							// Getting the headers key name which is present in between the delimiters "<" and ">" from resource management sheet
+							headernames[hdrcount] = RetrieveValueUsingAutomationKey(headernames[hdrcount].substring(headernames[hdrcount].indexOf("<") + 1, headernames[hdrcount].indexOf(">")));
+							// Checking the headervalues is having the delimiters "<" and ">"
+							if(headervalues[hdrcount].contains("<") && headervalues[hdrcount].contains(">")){
+								// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet
+								headervalues[hdrcount] = RetrieveValueUsingAutomationKey(headervalues[hdrcount].substring(headervalues[hdrcount].indexOf("<") + 1, headervalues[hdrcount].indexOf(">")));
+							}
+							hstable.put(headernames[hdrcount], headervalues[hdrcount]);
+					}
+				}
 
 			Hashtable<String, Integer> hstableheaders = new Hashtable<String, Integer>();
 			for( int hdrcount = 0; hdrcount <= headernames.length - 1; hdrcount++)
@@ -12487,7 +13647,7 @@ return element;
 				for( int headercolumn = 1; headercolumn <= headerColumns.size(); headercolumn++)
 				{
 					String headername = driver.findElement(By.xpath("//*[@id='"+attributeID+"']//thead/tr[1]/th["+ headercolumn +"]")).getText();
-					if(headernames[hdrcount].equalsIgnoreCase(headername)){
+					if(headernames[hdrcount].equals(headername)){
 						hstableheaders.put(headernames[hdrcount], headercolumn);
 						iheaderexist = 1;
 						break;
@@ -12552,12 +13712,20 @@ return element;
 				ExtentTestManager.reportStepFail(driver,    "Required details are not provided in the data sheet.", false);
 				return false;
 			}
+
+			// Checking the value is having the delimiters "<" and ">"
+			if(strData.contains("<") && strData.contains(">")){
+			// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet.				
+			strData = RetrieveValueUsingAutomationKey(strData.substring(strData.indexOf("<") + 1, strData.indexOf(">")));
+			
+			}	
+			
 			Select dropdown= new Select(selectByLocatorType(getValueFromPOM));
 			List<WebElement> allSelectedOptions = dropdown.getOptions();
 			for (WebElement webElement : allSelectedOptions)
 			{
 			tooltip = webElement.getAttribute("title");
-				if(tooltip.trim().equalsIgnoreCase(strData)){
+				if(tooltip.trim().equals(strData)){
 				new Select(selectByLocatorType(getValueFromPOM)).selectByVisibleText(webElement.getText());
 				ExtentTestManager.reportStepPass("Item '" +  tooltip + "' is selected from the  '"+strTestObject+"' List box successfully" );
 				WebListSelectTooltip=true;
@@ -12587,6 +13755,9 @@ return element;
 		String actualvalue = null;
 		String Expected_value = null;
 		String Current_Date=null;
+		String[] splitted_text = null;
+		
+		
 		try{	
 			if(strExecEventFlag == 1){
 				primaryColumnName = getTestData(testDataFilePathStatic, testComponentNameStatic, primaryCol,gblrecordsCounterStatic);
@@ -12600,13 +13771,20 @@ return element;
 				ExtentTestManager.reportStepFail(driver,    "Required details are not provided in the data sheet.", false);
 				return false;
 			}
+
+			// Checking the value is having the delimiters "<" and ">"
+			if(primaryColumnName.contains("<") && primaryColumnName.contains(">")){
+				// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet.
+				primaryColumnName = RetrieveValueUsingAutomationKey(primaryColumnName.substring(primaryColumnName.indexOf("<") + 1, primaryColumnName.indexOf(">")));
+			}			
+
 			attributeID = selectByLocatorType(getValueFromPOM).getAttribute("id");
 			List<WebElement> headerColumns = driver.findElements(By.xpath("//*[@id='"+attributeID+"']//thead/tr[1]/th"));
 			int findPrimaryColumn = 0;
 
 			for(int headerCounterPrimaryColumn = 1;headerCounterPrimaryColumn <= headerColumns.size(); headerCounterPrimaryColumn++){
 				String GetTitleHeaders = driver.findElement(By.xpath("//*[@id='"+attributeID+"']//thead/tr[1]/th["+ headerCounterPrimaryColumn +"]")).getText();
-				if(GetTitleHeaders.equalsIgnoreCase(primaryColumnName)){
+				if(GetTitleHeaders.equals(primaryColumnName)){
 					findPrimaryColumn = headerCounterPrimaryColumn;
 					break;
 				}
@@ -12622,7 +13800,30 @@ return element;
 			Hashtable<String, String> hstable = new Hashtable<String, String>();
 			for( int hdrcount = 0; hdrcount <= headernames.length - 1; hdrcount++)
 			{
-				hstable.put(headernames[hdrcount], headervalues[hdrcount]);
+					// Checking the items in the array is having the delimiter ";"
+					if(headernames[hdrcount].contains(";")){
+					// Splitting the header names data with ";" and storing the values in an array
+					splitted_text = headernames[hdrcount].split("\\;");
+					// Getting the value of the key name which is present in between the delimiters "<" and ">" of the first item in an array from the resource management sheet
+					headernames[hdrcount] = RetrieveValueUsingAutomationKey(splitted_text[0].substring(splitted_text[0].indexOf("<") + 1, splitted_text[0].indexOf(">")));
+					// Concatenates the value of second item in an array from properties file.
+					headernames[hdrcount] = headernames[hdrcount] + " " + property.getProperty(splitted_text[1]);
+					// Checking the headervalues is having the delimiters "<" and ">"
+					if(headervalues[hdrcount].contains("<") && headervalues[hdrcount].contains(">")){
+						// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet
+						headervalues[hdrcount] = RetrieveValueUsingAutomationKey(headervalues[hdrcount].substring(headervalues[hdrcount].indexOf("<") + 1, headervalues[hdrcount].indexOf(">")));
+					}
+					hstable.put(headernames[hdrcount], headervalues[hdrcount]);
+					} else{
+							// Getting the headers key name which is present in between the delimiters "<" and ">" from resource management sheet
+							headernames[hdrcount] = RetrieveValueUsingAutomationKey(headernames[hdrcount].substring(headernames[hdrcount].indexOf("<") + 1, headernames[hdrcount].indexOf(">")));
+							// Checking the headervalues is having the delimiters "<" and ">"
+							if(headervalues[hdrcount].contains("<") && headervalues[hdrcount].contains(">")){
+								// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet
+								headervalues[hdrcount] = RetrieveValueUsingAutomationKey(headervalues[hdrcount].substring(headervalues[hdrcount].indexOf("<") + 1, headervalues[hdrcount].indexOf(">")));
+							}
+							hstable.put(headernames[hdrcount], headervalues[hdrcount]);
+					}
 			}
 
 			Hashtable<String, Integer> hstableheaders = new Hashtable<String, Integer>();
@@ -12632,7 +13833,7 @@ return element;
 				for( int headercolumn = 1; headercolumn <= headerColumns.size(); headercolumn++)
 				{
 					String headername = driver.findElement(By.xpath("//*[@id='"+attributeID+"']//thead/tr[1]/th["+ headercolumn +"]")).getText();
-					if(headernames[hdrcount].equalsIgnoreCase(headername)){
+					if(headernames[hdrcount].equals(headername)){
 						hstableheaders.put(headernames[hdrcount], headercolumn);
 						iheaderexist = 1;
 						break;
@@ -12754,9 +13955,16 @@ return element;
 			selectedValue = new Select(selectByLocatorType(getValueFromPOM)).getFirstSelectedOption().getText();
 			select_dropdown = new Select(selectByLocatorType(getValueFromPOM));  
 			itemlistcount = select_dropdown.getOptions().size();
+			
+			// Checking the value is having the delimiters "<" and ">"			
+			if(strData.contains("<") && strData.contains(">")){
+			// Getting the value of the key name which is present in between the delimiters "<" and ">" from resource management sheet.
+			strData = RetrieveValueUsingAutomationKey(strData.substring(strData.indexOf("<") + 1, strData.indexOf(">")));
+			}
+			
 			if(selectByLocatorType(getValueFromPOM).isDisplayed()){
 
-				if(selectedValue.trim().equalsIgnoreCase(strData.trim()) && itemlistcount == itemscount){
+				if(selectedValue.trim().equals(strData.trim()) && itemlistcount == itemscount){
 					ExtentTestManager.reportStepPass(strTestObject +"'s selected dropdown value '"+selectedValue + "' matches with the Expected Value '"+strData+"' and this is the only item present in the dropdown." );
 					WebListCheckSelectedExist = true;
 				}else{
@@ -13095,6 +14303,8 @@ return element;
 		String Column_name = null;
 		String SQL_condition = null;
 		String noOfRowsShouldBePresent=null;
+		int No_Of_Records = 0;
+
 		try {
 			if(strExecEventFlag==1){
 				Table_name=getTestData(testDataFilePathStatic, testComponentNameStatic,sqltablename,gblrecordsCounterStatic);
@@ -13110,16 +14320,15 @@ return element;
 			query = "select "+Column_name+" from "+Table_name+" where "+SQL_condition+"";
 			ResultSet rs_SQLServer = EShopstmt.executeQuery(query);		
 
-			int temp=0;	
 			while(rs_SQLServer.next()){
-				temp++;
+				No_Of_Records = Integer.parseInt(rs_SQLServer.getString(1));
 			}
-
-			if(temp==(Integer.parseInt(noOfRowsShouldBePresent))){
-				ExtentTestManager.reportStepPass("Actual No. of Rows '"+temp+"' for the Query *"+query+"* matches with expected No of Rows '"+noOfRowsShouldBePresent+"'");
+			
+			if(No_Of_Records==(Integer.parseInt(noOfRowsShouldBePresent))){
+				ExtentTestManager.reportStepPass("Actual No. of Rows '"+ No_Of_Records +"' for the Query "+query+" matches with expected No of Rows '"+noOfRowsShouldBePresent+"'");
 				ESHOPSQLDBCheckNoOfRowsExist=true;
 			}else{
-				ExtentTestManager.reportStepFail(driver, "Actual No. of Rows '"+temp+"' for the Query *"+query+"* does not match with expected No of Rows '"+noOfRowsShouldBePresent+"'", false);
+				ExtentTestManager.reportStepFail(driver, "Actual No. of Rows '"+ No_Of_Records +"' for the Query "+query+" does not match with expected No of Rows '"+noOfRowsShouldBePresent+"'", false);
 				ESHOPSQLDBCheckNoOfRowsExist=true;
 			}
 
@@ -13134,7 +14343,308 @@ return element;
 		return ESHOPSQLDBCheckNoOfRowsExist;
 	}	
 	
-	
+
+		public synchronized boolean WebListSelectLanguageEnv(String getValueFromPOM, String strTestObject){
+		String strData=null;
+		boolean WebListSelectLanguageEnv=false;
+		int iflag =0;
+		
+		String resxFilePath=System.getProperty("user.dir")+property.getProperty("resourceMgmtfilekeyPath");
+		
+		ReadExcel suiteXL = new ReadExcel(resxFilePath);
+		
+		try {
+
+			strData=suiteXL.RetrieveAutomationKeyFromExcel("Extension_Language", "Select_Language", property.getProperty("Language_Required"));
+
+			if(strData==null){
+				ExtentTestManager.reportStepFail(driver,"Required details are not provided for the function : 'RetrieveAutomationKeyFromExcel'." , true);
+				return false;
+			}
+
+			List<WebElement> element = listSelectByLocatorType(getValueFromPOM);
+
+			for(WebElement dropdownValue : element){
+				
+				if((dropdownValue.getText().trim()).equals(strData)){
+					dropdownValue.click();
+					ExtentTestManager.reportStepPass("'"+strData+"' is selected successfully from the Dropdown list '"+strTestObject+"'");
+					WebListSelectLanguageEnv = true;
+					iflag = 1;
+					break;
+				}
+			}
+			if(iflag==0){
+				ExtentTestManager.reportStepFail(driver,"The item : '"+ strData +"' is not available in the dropdown :"+ strTestObject +"." , true);
+				return false;
+			}
+
+		} catch (StaleElementReferenceException e) {
+				return WebListSelectLanguageEnv(getValueFromPOM, strTestObject);
+		} catch (Exception e) {
+			ExtentTestManager.reportStepFail(driver,"Item '" +  strData + "' was not selected from the  '"+strTestObject+"' List box- "+e.getMessage() , true); 
+			WebListSelectLanguageEnv=false;
+		}
+		return WebListSelectLanguageEnv;
+	}
+
+		
+		public synchronized boolean webElementtextfromxmlcompare(String getValueFromPOM, String strTestObject, String strLocation, String strColumnName, int strExecEventFlag ){
+			String actualResult=null;
+			String automationKey=null;
+			String valueFromResxFile=null;
+			String[] splitted_text1 = null;
+			String[] splitted_text2 = null;
+			String initialvalue = "";
+			String language_code =null;
+			NodeList nodeList=null;
+			Pattern ptn = null;
+			Matcher mtch = null;
+			
+			//String resxFilePath="//\\"+property.getProperty("resourceMgmtfilekeyPath");
+			String resxFilePath=System.getProperty("user.dir")+property.getProperty("resourceMgmtfilekeyPath");
+			
+			ReadExcel suiteXL = new ReadExcel(resxFilePath);
+			
+			try{
+				if(strExecEventFlag==1){
+					automationKey=getTestData(testDataFilePathStatic, testComponentNameStatic, strColumnName, gblrecordsCounterStatic);
+				}else{
+					automationKey=strColumnName;
+				}
+
+				log.info("automationKey in Fl RESX STATIC COMPARE is : "+automationKey);
+
+				if(automationKey==null || automationKey.equalsIgnoreCase("")){
+					ExtentTestManager.reportStepFail(driver, "Required details are not provided in the data sheet.", false);
+					return false;
+				}
+				
+				language_code = suiteXL.RetrieveAutomationKeyFromExcel("Extension_Language", "Language_Code", property.getProperty("Language_Required"));
+				
+				DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
+				DocumentBuilder builder=factory.newDocumentBuilder();;
+				File file=new File("//\\"+property.getProperty(strLocation));
+
+				Document document=builder.parse(file);
+				document.getDocumentElement().normalize();
+
+				XPath xpath=XPathFactory.newInstance().newXPath();
+				
+
+				//Actual value of the Element
+				actualResult = selectByLocatorType(getValueFromPOM).getText();
+				
+				if(automationKey.contains(";")){
+					
+					splitted_text1 = automationKey.split("\\;");
+					
+					for(int k = 0; k <= splitted_text1.length - 1; k++) {
+				
+						if(splitted_text1[k].contains("|")){
+							
+							splitted_text2 = splitted_text1[k].split("\\|");
+							
+							if(!(splitted_text2[0].contains("<") && splitted_text2[0].contains(">"))) {
+							
+								nodeList=(NodeList)xpath.compile("*//FunctionName[@functionName='"+ splitted_text2[0] +"']//ErrorCode[@ErrorCode='"+ splitted_text2[1] +"']//"+ language_code +"/text()").evaluate(document,XPathConstants.NODESET);
+								
+								valueFromResxFile = nodeList.item(0).getTextContent().toString();
+			
+								if(valueFromResxFile.contains("#")){
+									
+										ptn = Pattern.compile("#.*?#");
+										mtch = ptn.matcher(valueFromResxFile);
+										valueFromResxFile = mtch.replaceAll(splitted_text2[2]) + splitted_text2[3];
+								}
+							
+							} else {
+								
+								valueFromResxFile = RetrieveValueUsingAutomationKey(splitted_text2[0].substring(splitted_text2[0].indexOf("<") + 1, splitted_text2[0].indexOf(">"))) + splitted_text2[1];
+
+							}
+						
+						} else {
+							
+							valueFromResxFile = RetrieveValueUsingAutomationKey(splitted_text1[k].substring(splitted_text1[k].indexOf("<") + 1, splitted_text1[k].indexOf(">")));
+
+						}
+						
+						initialvalue = initialvalue + " " + valueFromResxFile;
+					}
+				
+					valueFromResxFile = initialvalue;
+					
+				} else {
+				
+					if(automationKey.contains("|")){
+						
+						splitted_text2 = automationKey.split("\\|");
+						
+						if(!(splitted_text2[0].contains("<") && splitted_text2[0].contains(">"))) {
+
+							nodeList=(NodeList)xpath.compile("*//FunctionName[@functionName='"+ splitted_text2[0] +"']//ErrorCode[@ErrorCode='"+ splitted_text2[1] +"']//"+ language_code +"/text()").evaluate(document,XPathConstants.NODESET);
+							
+							valueFromResxFile = nodeList.item(0).getTextContent().toString();
+		
+							if(valueFromResxFile.contains("#")){
+								
+									ptn = Pattern.compile("#.*?#");
+									mtch = ptn.matcher(valueFromResxFile);
+									valueFromResxFile = mtch.replaceAll(splitted_text2[2]) + splitted_text2[3];
+							} else{
+								valueFromResxFile = valueFromResxFile + splitted_text2[2];
+							}
+						
+						} else {
+							
+							valueFromResxFile = RetrieveValueUsingAutomationKey(splitted_text2[0].substring(splitted_text2[0].indexOf("<") + 1, splitted_text2[0].indexOf(">"))) + splitted_text2[1];
+
+						}
+					} else {
+						
+						valueFromResxFile = RetrieveValueUsingAutomationKey(automationKey.substring(automationKey.indexOf("<") + 1, automationKey.indexOf(">")));
+
+					}
+				}
+
+		
+				//Get the Value for the Key from the .resx file using the Automation from Resource Management file
+				// valueFromResxFile=RetrieveValueUsingAutomationKey(automationKey);
+				
+				log.info("valueFromResxFile in Fl RESX STATIC COMPARE is : "+valueFromResxFile);
+
+				if(valueFromResxFile==null || automationKey.equalsIgnoreCase("")){
+					ExtentTestManager.reportStepFail(driver, "Error occured while retrieving data from the Resource Management Data file.", true);
+					return false;
+				}
+
+				if((actualResult.trim()).equals(valueFromResxFile.trim())){
+					ExtentTestManager.reportStepPass("'"+strTestObject+"'s actual value '" +actualResult+ "' matches with the content in the Resource file '"+valueFromResxFile+"'");
+					return true;
+				}else{
+					ExtentTestManager.reportStepFail(driver,"'"+strTestObject+"'s actual value '" +actualResult+ "' does not match with the content in the Resource file '"+valueFromResxFile+"'", true);
+					return false;
+				}
+			}catch (StaleElementReferenceException e){
+				return webElementtextfromxmlcompare(getValueFromPOM, strTestObject, strLocation, strColumnName, strExecEventFlag);
+			}catch (Exception e){
+				ExtentTestManager.reportStepFail(driver, "Error occured while comparing the text of a WebElement '"+strTestObject+"'and the error description is :"+e.getMessage(), true);
+				return false;
+			}
+
+		}
+
+		public synchronized boolean RRBSDBInsert(String rrbstablename, String rrbscolumnvalue, int strExecEventFlag){
+			String tablename = null;
+			String columnvalue = null;
+			try{
+				if(strExecEventFlag==1){
+					tablename=getTestData(testDataFilePathStatic, testComponentNameStatic,rrbstablename,gblrecordsCounterStatic);
+					columnvalue=getTestData(testDataFilePathStatic, testComponentNameStatic,rrbscolumnvalue,gblrecordsCounterStatic);
+				}
+				if(tablename==null || columnvalue==null){
+					ExtentTestManager.reportStepFail(driver,"Required details are not provided in test data sheet.", false);
+					return false;
+				}
+			} catch (Exception e){
+				ExtentTestManager.reportStepFail(driver, "Exception occured while getting the text from test data. Error description is : "+ e.getMessage() +".", true);
+				return false;
+			}
+				
+			String query = "INSERT INTO "+ tablename +" VALUES ("+ columnvalue +")";
+			
+			try{
+				rrbsstatement.executeQuery(query);
+				ExtentTestManager.reportStepPass("The values : "+ columnvalue + " are successfully inserted into the table :"+ tablename +".");
+				return true;
+			} catch (Exception e) { 
+				ExtentTestManager.reportStepFail(driver, "Error occured while executing the RRBS query.Error description is : "+ e.getMessage() +".", false);
+				return false;
+			}
+		}
+
+		public synchronized boolean SQLDBCheckValueIncrement(String sqltablename, String strsqlcolumnname,String strsqlcondition,String strEnvVariableColumn,int strExecEventFlag){
+			String query = null;
+			String check;
+			String Table_name = null;
+			String Column_name = null;
+			String SQL_condition = null;
+			String Expected_value = null;
+			String envVariable=null;
+			String Actual_Value = null;
+			boolean functionStatus=false;
+			try {
+				if(strExecEventFlag==1){
+					Table_name=getTestData(testDataFilePathStatic, testComponentNameStatic,sqltablename,gblrecordsCounterStatic);
+					Column_name=getTestData(testDataFilePathStatic, testComponentNameStatic,strsqlcolumnname,gblrecordsCounterStatic);
+					SQL_condition=getTestData(testDataFilePathStatic, testComponentNameStatic,strsqlcondition,gblrecordsCounterStatic);
+					envVariable=getTestData(testDataFilePathStatic, testComponentNameStatic,strEnvVariableColumn,gblrecordsCounterStatic);
+				}
+				if(Table_name==null || Column_name==null || SQL_condition==null){
+					ExtentTestManager.reportStepFail(driver, "Required details are not provided in test data sheet.", false);
+					return false;
+				}
+
+				Expected_value=Runtimevalue.getProperty(envVariable);
+				if(Expected_value==null){
+					ExtentTestManager.reportStepFail(driver,"Dynamic Variable '"+envVariable+"' has NO VALUE", false);
+					return false;
+				}
+				query = "select "+Column_name+" from "+Table_name+" where "+SQL_condition;
+				check = "select "+Column_name+" from "+Table_name+" where "+SQL_condition;
+
+				//Check for Record Available
+				ResultSet rs_SQLServerCheck = stmt.executeQuery(check);
+				int temp=0;	
+				while(rs_SQLServerCheck.next()){
+					temp++;
+				}
+
+				if(temp < 1){
+					ExtentTestManager.reportStepFail( driver,"NO RECORDS available for the Query  "+ query + "  in DB",false);
+					return false;
+				}
+
+				rs_SQLServerCheck = stmt.executeQuery(check);
+				rs_SQLServerCheck.next();
+				rs_SQLServerCheck.getObject(Column_name);
+
+				if (rs_SQLServerCheck.wasNull()) {
+
+					log.info("Acual value is nULL");
+
+					if(Expected_value.equalsIgnoreCase("NULL")){
+						ExtentTestManager.reportStepPass("Actual value 'NULL' for the SQL Query "+query+" matches the expected value from ENV Variable '"+Expected_value+"'");
+						functionStatus= true;
+					}else if(!(Expected_value.equalsIgnoreCase("NULL"))){
+						ExtentTestManager.reportStepFail(driver,"Actual value 'NULL' for the SQL Query "+query+" does not match with the expected value from ENV Variable '"+Expected_value+"'", false);
+						functionStatus= false;
+					}
+				}else{
+					ResultSet rs_SQLServer = stmt.executeQuery(query);
+					rs_SQLServer.next();
+					Actual_Value = rs_SQLServer.getString(1).trim();
+					
+					int Actual_Value_Int = Integer.parseInt(Actual_Value);
+					int Expected_value_Int = Integer.parseInt(Expected_value) + 1;
+					
+					if(Actual_Value_Int == Expected_value_Int){
+						ExtentTestManager.reportStepPass("Actual value '"+Actual_Value_Int+"' for the SQL Query "+query+" matches the expected value from ENV Variable '"+Expected_value_Int+"'");
+						functionStatus= true;
+					}else if(!(Actual_Value_Int == Expected_value_Int)){
+						ExtentTestManager.reportStepFail(driver,"Actual value '"+Actual_Value_Int+"' for the SQL Query "+query+" does not match with the expected value from ENV Variable '"+Expected_value_Int+"'", false);
+						functionStatus= false;
+					}
+				}
+
+			}catch (Exception e){
+				ExtentTestManager.reportStepFail(driver,"Error occured while comparing the values in SQL query.Error description is : "+ e.getMessage(), false);
+				return false;
+			}
+			return functionStatus;
+		}		
+		
 }
 
 
