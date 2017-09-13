@@ -1,9 +1,9 @@
 package wrappers;
 
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Set;
@@ -16,7 +16,6 @@ import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Parameters;
-
 
 import report.ExtentTestManager;
 
@@ -40,7 +39,8 @@ public class ApplicationWrapper extends FunctionLibrary {
 	static CountDownLatch latch;
 	static CountDownLatch afterLatch;
 	private static boolean calledMyMethod;
-
+	
+	
 	/**
 	 * <b>killBrowserInTaskManager</b><br>
 	 * 
@@ -199,6 +199,7 @@ public class ApplicationWrapper extends FunctionLibrary {
 			//Below function commented since this Window popup appears only while using the Selenium 3x and Gecko driver
 			//Now we are currently using only Selenium 2x without Gecko
 			//killPluginFFInTaskManager();
+			Runtimevalue.setProperty("Current_Script_Name", testcaseName);
 			if(suiteType.equalsIgnoreCase(sysProperty.getProperty("SerialSuiteType"))){
 				killBrowserInTaskManager();
 				killBrowserDriverInTaskManager();
@@ -225,6 +226,8 @@ public class ApplicationWrapper extends FunctionLibrary {
 	@Parameters({"suiteType"})
 	public void afterTest(String suiteType) throws Exception{
 
+	  try{	
+		
 		ExtentTestManager.endTestCase();
 
 		File file =new File("./"+sysProperty.getProperty("extentReportFilePath")+"/"+reportFileName);
@@ -288,6 +291,21 @@ public class ApplicationWrapper extends FunctionLibrary {
 			log.info("New report condition not yet needed");
 		}
 
+	  }catch(Exception e){
+		  
+		  e.printStackTrace();
+		  
+	  }finally {
+		  
+		  try {
+				ExtentTestManager.endTestCase();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		  
+		}
+		  
 	}
 
 	/**
@@ -308,12 +326,19 @@ public class ApplicationWrapper extends FunctionLibrary {
 		log.info("\n\n\n***** Generating the Overview Html Report *****");
 		log.info("Note: Kindly check the Script details Tracker is placed in the Path, else it wont get Updated.");
 		try{
-			//Thread.sleep(2000);
+			Thread.sleep(2000);
 			//ScriptDetails.generateExcelReports();
 			//log.info("***** Overview Html Report Generated & Script Details Tracker Updated *****");
 		}catch(Exception e){
 			log.info("Exception in afterSuite generateExcelReports. "+e);
 			e.printStackTrace();
+		}finally{
+			try {
+				ExtentTestManager.endTestCase();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
 
