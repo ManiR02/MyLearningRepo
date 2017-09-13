@@ -60,9 +60,30 @@ public class Network_Feature extends FunctionLibrary{
 			hs.put("TOPUP", "xpath#.//*[@id='chkSMSTopup']/..");
 			hs.put("TOPUP_Toggle", "xpath#//label[@class='i-switch bg-success']/input[@id='chkSMSTopup']");
 			hs.put("MHA", "xpath#.//*[@id='chkMobileHomeAccount']/..");
-			hs.put("MHA_Toggle", "xpath#//label[@class='i-switch bg-success']/input[@id='chkMobileHomeAccount']");		
-
-
+			hs.put("MHA_Toggle", "xpath#//label[@class='i-switch bg-success']/input[@id='chkMobileHomeAccount']");
+			hs.put("MCA", "xpath#.//*[@id='chkMCA']/..");
+			hs.put("MCA_Toggle", "xpath#//label[@class='i-switch bg-success']/input[@id='chkMCA']");
+			hs.put("CRBT", "xpath#.//*[@id='chkCRBT']/..");
+			hs.put("CRBT_Toggle", "xpath#//label[@class='i-switch bg-success']/input[@id='chkCRBT']");
+			hs.put("CRBT", "xpath#.//*[@id='chkCRBT']/..");
+			hs.put("CRBT_Toggle", "xpath#//label[@class='i-switch bg-success']/input[@id='chkCRBT']");
+			hs.put("BUNDLE_TOPUP", "xpath#.//*[@id='chkBundleTopup']/..");
+			hs.put("BUNDLE_TOPUP_Toggle", "xpath#//label[@class='i-switch bg-success']/input[@id='chkBundleTopup']");
+			hs.put("SIM_SWAP_SUSPEND", "xpath#.//*[@id='chkSimSwapSuspend']/..");
+			hs.put("SIM_SWAP_SUSPEND_Toggle", "xpath#//label[@class='i-switch bg-success']/input[@id='chkSimSwapSuspend']");
+			hs.put("MSISDN_SWAP_SUSPEND", "xpath#.//*[@id='chkMsisdnSwapSuspend']/..");
+			hs.put("MSISDN_SWAP_SUSPEND_Toggle", "xpath#//label[@class='i-switch bg-success']/input[@id='chkMsisdnSwapSuspend']");
+			hs.put("Portout_SWAP_SUSPEND", "xpath#.//*[@id='chkPortOutSwapSuspend']/..");
+			hs.put("Portout_SWAP_SUSPEND_Toggle", "xpath#//label[@class='i-switch bg-success']/input[@id='chkPortOutSwapSuspend']");
+			hs.put("ADULT_CONTENT", "xpath#.//*[@name='adultContent']/..");
+			hs.put("ADULT_CONTENT_Toggle", "xpath#//label[@class='i-switch bg-success']/input[@name='adultContent']");
+			hs.put("4G_HOME", "xpath#.//*[@id='chkMO4G']/..");
+			hs.put("4G_HOME_Toggle", "xpath#//label[@class='i-switch bg-success']/input[@id='chkMO4G']");
+			hs.put("4G_ROAM", "xpath#.//*[@id='chkMORoam4G']/..");
+			hs.put("4G_ROAM_Toggle", "xpath#//label[@class='i-switch bg-success']/input[@id='chkMORoam4G']");
+			hs.put("4G_LOCAL_ROAM", "xpath#.//*[@id='chk4GLocalRoam']/..");
+			hs.put("4G_LOCAL_ROAM_Toggle", "xpath#//label[@class='i-switch bg-success']/input[@id='chk4GLocalRoam']");
+			
 			hs.put("MT_CALLS_STATUS", "id#MT_Calls");
 			hs.put("MO_ROAM_CALLS_STATUS", "id#MO_Roam_Calls");
 			hs.put("MT_ROAM_CALLS_STATUS", "id#MT_Roam_Calls");
@@ -75,6 +96,17 @@ public class Network_Feature extends FunctionLibrary{
 			hs.put("VMS_STATUS", "id#VMS");
 			hs.put("TOPUP_STATUS", "id#SMS_TOPUP");
 			hs.put("MHA_STATUS", "id#MHA");
+			hs.put("MCA_STATUS", "id#MCA");
+			hs.put("CRBT_STATUS", "id#CRBT");
+			hs.put("MO_DATA_STATUS", "id#MO_Data");
+			hs.put("MO_ROAMING_DATA_STATUS", "id#MO_Roaming_Data");
+			hs.put("BUNDLE_TOPUP_STATUS", "id#Bundle_Topup");
+			hs.put("SIM_SWAP_SUSPEND_STATUS", "id#SIMSwap_SuspRequest");
+			hs.put("MSISDN_SWAP_SUSPEND_STATUS", "id#MsisdnSwap_SuspRequest");
+			hs.put("Portout_SWAP_SUSPEND_STATUS", "id#PortSwap_SuspendRequest");
+			hs.put("4G_HOME_STATUS", "id#4G_Home");
+			hs.put("4G_ROAM_STATUS", "id#4G_Roam");
+			hs.put("4G_LOCAL_ROAM_STATUS", "id#4G_Local_Roam");
 			hs.put("Feature_Type", "id#lblFeatureType");
 			hs.put("Status", "id#lblStatus");
 			hs.put("Ticket_ID", "id#lblTicketID");
