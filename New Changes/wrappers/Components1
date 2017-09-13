@@ -1,0 +1,1213 @@
+package wrappers;
+
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
+import java.lang.reflect.Method;
+
+import org.testng.SkipException;
+import org.testng.annotations.Parameters;
+import org.testng.annotations.Test;
+
+import Page_Objects.Balance_Transfer;
+import Page_Objects.Billing_Transaction;
+import Page_Objects.Bundle_Purchase;
+import Page_Objects.CRM_Login_Page;
+import Page_Objects.CRM_Logout;
+import Page_Objects.Call_Forward;
+import Page_Objects.Cancel_Initail_Loc;
+import Page_Objects.Credit_Debit;
+import Page_Objects.Data_Usage_Limit;
+import Page_Objects.Disability_Services;
+import Page_Objects.EU_Configurations;
+import Page_Objects.Network_Feature;
+import Page_Objects.OBA_Credit;
+import Page_Objects.Online_TopUp;
+import Page_Objects.PendingApproval;
+import Page_Objects.Refund_Payment;
+import Page_Objects.Registration;
+import Page_Objects.Registration_FRA;
+import Page_Objects.Registration_GBR;
+import Page_Objects.Registration_NOR;
+import Page_Objects.Registration_POL;
+import Page_Objects.Registration_USA;
+import Page_Objects.Send_Sim;
+import Page_Objects.Settings;
+import Page_Objects.Staff_TopUp;
+import Page_Objects.Subscribe_History;
+import Page_Objects.SwapImsi_Page;
+import Page_Objects.Tickets;
+import Page_Objects.Topup_Failure_History;
+import Page_Objects.USA_Family_Plan;
+import Page_Objects.USA_Pages;
+import Page_Objects.ValueAddedServices;
+import Page_Objects.Voucher_Status;
+import Page_Objects.Voucher_TopUp_Page;
+import Page_Objects.RM_Ireland;
+import report.ExtentTestManager;
+import utils.Constants;
+import utils.ReadExcel;
+import Page_Objects.Security_Policy;
+import Page_Objects.Agent_Profile;
+import Page_Objects.Dynamic_Number_Allocation;
+import Page_Objects.Swap_Msisdn_Page;
+
+/**
+ * 
+ * <h3>ApplicationWrapper</h3>
+ * 
+ * <p>
+ * <b>Class holds all components</b> 
+ * 
+ * @author Lakshman A
+ * @since OCT 1, 2016
+ *
+ */
+
+public class Components extends ApplicationWrapper {
+
+	protected boolean skipAllComponentsVariable=false;
+	protected boolean eventInACaseFailed=false;
+
+	@Test
+	@Parameters({"testcaseName","testdatasheet","suiteType"})
+	private synchronized void runComponents(String testcaseName,String testdatasheet,String suiteType) throws Exception{
+		testCaseStatus=true;
+		eventInACaseFailed=false;
+
+		ReadExcel testCaseXL = new ReadExcel(testdatasheet);
+
+		boolean testCaseSheetExist=testCaseXL.CheckTestCaseNamedSheetExist(testdatasheet,testcaseName);
+
+		//If Sheet exist with TestCase name in TestData SpreadSheet
+		if(testCaseSheetExist){
+
+			Components componentObject = new Components();
+			Method componentMethodName = null;
+
+			for (int testCompCount = 1; testCompCount <= testCaseXL.getRowCount(testcaseName); testCompCount++) {
+
+				String componentName = testCaseXL.getCellData(testcaseName, Constants.AppComp_Order_ColName, testCompCount);
+				String componentDesc = testCaseXL.getCellData(testcaseName, Constants.AppComp_Desc_ColName, testCompCount);
+				log.info("***Component Name : "+componentName+" - "+componentDesc);
+
+				if(testCaseXL.getCellData(testcaseName, Constants.AppComp_Execute_ColName, testCompCount).equalsIgnoreCase(Constants.RUNMODE_YES)){
+					log.info("Component Execute Status- [ YES ]");
+
+					String componentDisableSteps = testCaseXL.getCellData(testcaseName, Constants.AppComp_DEvents_ColName, testCompCount);
+
+					ExtentTestManager.startComponent(componentName, componentDesc);
+
+					//Check for the Disable and Enable Events has proper values
+					if( !(componentDisableSteps.equals(""))){
+						int noOfDataSet = testCaseXL.getRowCount(componentName);
+						//Adding a extra Event explaining about the Processing Record
+						if(noOfDataSet >1){
+							ExtentTestManager.reportStepInfo("<b><u>Total Number of Data Set : "+noOfDataSet+"</u></b>");
+						}
+
+						for(int dataSetCount = 1;dataSetCount<=noOfDataSet;dataSetCount++){
+
+							if(testCaseXL.getCellData(componentName, Constants.TestData_Execute_ColName, dataSetCount).equalsIgnoreCase(Constants.RUNMODE_YES)){
+
+								String testDataObj = testCaseXL.getCellData(componentName, Constants.TestData_Objective_ColName, dataSetCount);
+								if(noOfDataSet > 1){
+									ExtentTestManager.reportStepInfo("<u>Processing Record No: <b>"+dataSetCount+"</b></u>");
+								}
+								ExtentTestManager.reportStepInfo("<b>Test Data Objective</b> : "+testDataObj);
+
+								try{
+									@SuppressWarnings("rawtypes")
+									Class[] paramTypes = new Class[4];
+									paramTypes[0]=String.class;
+									paramTypes[1]=String.class;
+									paramTypes[2]=String.class;
+									paramTypes[3]=int.class;
+
+									componentMethodName = componentObject.getClass().getMethod(componentName, paramTypes);
+									componentMethodName.invoke(componentObject,testdatasheet,componentName,componentDisableSteps,dataSetCount);
+
+								}catch(NoSuchMethodException e){
+									ExtentTestManager.reportStepError("No Such Component Named '"+componentName+"' in Component Class.");
+								}catch(InvocationTargetException e){
+									log.info("InvocationTargetException thrown. Details : "+e);
+									e.printStackTrace();
+								}catch(SkipException e){
+									log.info("SkipException Component failed. Skipping all the Component "+e);
+									e.printStackTrace();
+									ExtentTestManager.reportStepSkip("<b>Skipping the '"+componentName+"' as the Step in previous Component FAILED.</b>");
+								}catch(Exception e){
+									log.info("Common Exception catch Component failed."+e);
+									e.printStackTrace();
+								}finally{
+									//ExtentTestManager.appendComponent();
+									log.info("Component Ends.\n");
+								}
+							}else if(testCaseXL.getCellData(componentName, Constants.TestData_Execute_ColName, dataSetCount).equalsIgnoreCase(Constants.RUNMODE_NO)){
+								ExtentTestManager.reportStepInfo("DataSet - "+dataSetCount+" Exectute status is set to 'No' in Component Sheet. Skipping the DataSet.");
+							}
+						}
+						ExtentTestManager.appendComponent();
+						log.info("Component Ends.\n");
+					}else{ 
+						ExtentTestManager.reportStepFail(  "Enter valid values in the Total_Events/Disable_Events Column of Test Data Sheet ", false);
+					}
+				}else{
+					log.info("Component Execute Status- [ No ]");
+					if(sysProperty.getProperty("Report_Switched_Off_Components").equalsIgnoreCase("True")){
+						ExtentTestManager.startComponent(componentName, componentDesc);
+						ExtentTestManager.reportStepSkip("<b>Component '<u>"+componentName+"</u>' is Switched OFF in the TestData Sheet</b>");
+						ExtentTestManager.appendComponent();
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * <b>Initialize the Total No of Steps and also initialize each Step as True</b>
+	 * @param totalSteps Total No of Steps from Excel
+	 * @author <b>Lakshman</b>
+	 * @since <b>14-APRIL-16</b>
+	 */
+	private synchronized boolean[] initializeSteps(int  totalSteps){
+
+		boolean[] stepStatus=new boolean[totalSteps];
+		for(int i=0;i<(totalSteps);i++){
+			stepStatus[i]=false;
+		}
+		return stepStatus;
+	}
+
+	/**
+	 * <b>Initialize the Total No of Steps and also initialize each Step as True</b>
+	 * @param totalSteps Total No of Steps from Excel
+	 * @author <b>Lakshman</b>
+	 * @since <b>14-APRIL-16</b>
+	 */
+	private synchronized int[] dropDisableSteps(int  totalSteps, String  disableSteps){
+
+		int[] runSteps=null;
+		String[] eachDisabledSteps=null;
+		int z;
+
+		try{
+			//Initializing the array with the values 1,2,3,4.... upto total events
+			runSteps =new int[totalSteps];
+			for(int a=0;a<(totalSteps);a++){
+				runSteps[a]=a+1;
+			}
+
+			if(sysProperty.getProperty("Ignore_Disable_Events").equalsIgnoreCase("false")){
+				if(!( (disableSteps.equals("0") || disableSteps.equals("0.0") )) ){	
+					log.info("Disable Events available...");
+					//Retrieving each event seperately
+					eachDisabledSteps=disableSteps.split(",");
+					for(int de=0;de<eachDisabledSteps.length;de++){
+						eachDisabledSteps[de]=eachDisabledSteps[de].replace(".0", "");
+					}
+					z=1;
+					for(String  a : eachDisabledSteps ){
+						int removeAction = Integer.parseInt(a)-z;
+
+						int reorderedIndex = runSteps.length -1;
+						for(int r=removeAction;r<reorderedIndex;r++){
+							runSteps[r]= runSteps[r+1];
+						}
+						int[] appComponentEventstemp= Arrays.copyOf(runSteps, reorderedIndex);
+						runSteps = appComponentEventstemp;
+						z=z+1;	
+					}
+				}
+			}else{
+				log.info("Ignoring Disable_Events and running all the Events");
+			}
+		}catch(Exception e){
+			log.info("Error inside dropDisableSteps  : "+e);
+			throw e;
+		}finally{
+			if(eachDisabledSteps!=null){
+				for(int j=0;j<eachDisabledSteps.length;j++){
+					eachDisabledSteps[j]=null;
+				}
+				eachDisabledSteps=null;
+			}
+		}
+		return runSteps;
+	}
+
+	private synchronized void validateComponentStatus(int[] reorderedSteps,boolean[] stepStatus,boolean defaultBreak,String ComponentName){
+		try{
+			boolean testStepsStatus=true;
+			for(int k=0;k<reorderedSteps.length;k++){
+				boolean stepValue=stepStatus[k];
+				if(stepValue != true){
+					testStepsStatus=false;
+				}
+			}
+			if(defaultBreak){
+				testStepsStatus=false;
+			}
+
+			if(testStepsStatus){
+				ExtentTestManager.reportStepInfo("<b>'"+ComponentName+"' Component execution is Successful.</b>");
+			}else{
+				ExtentTestManager.reportStepInfo("<b>'"+ComponentName+"' Component execution is not Successful.</b>" );
+			}
+
+		}catch(Exception e){
+			log.info("Exception in validateComponentStatus of Components  : "+e);
+			e.printStackTrace();
+			throw e;
+		}
+	}
+
+	private synchronized String getMethodName(){
+		try{
+			StackTraceElement[] stacktrace = Thread.currentThread().getStackTrace();
+
+			StackTraceElement element = stacktrace[2];
+			String methodName = element.getMethodName();	
+
+			return methodName;
+		}catch(Exception e){
+			e.printStackTrace();
+			return "";
+		}
+	}
+
+	///****************************  CRM Related Components ******************************/
+
+	//****************************  Page Model Object to use synchronised methods ******************************/
+	PendingApproval pendingApproval=new PendingApproval();
+	Settings settings=new Settings();
+	CRM_Logout cRM_Logout=new CRM_Logout();
+	CRM_Login_Page cRM_Login_Page=new CRM_Login_Page();
+	Staff_TopUp staff_TopUp=new Staff_TopUp();
+	Online_TopUp online_TopUp=new Online_TopUp();
+	ValueAddedServices valueAddedServices = new ValueAddedServices();
+	Balance_Transfer balance_Transfer=new Balance_Transfer();
+	Billing_Transaction billing_Transaction=new Billing_Transaction();
+	Bundle_Purchase bundle_Purchase = new Bundle_Purchase();
+	Call_Forward call_Forward = new Call_Forward();
+	Cancel_Initail_Loc cancel_Initail_Loc = new Cancel_Initail_Loc();
+	Credit_Debit credit_Debit = new Credit_Debit();
+	Data_Usage_Limit data_Usage_Limit = new Data_Usage_Limit();
+	Disability_Services disability_Services = new Disability_Services();
+	EU_Configurations eU_Configurations = new EU_Configurations();
+	Refund_Payment refund_Payment = new Refund_Payment();
+	Registration_FRA registration_FRA=new Registration_FRA();
+	Registration_GBR registration_GBR=new Registration_GBR();
+	Registration_NOR registration_NOR=new Registration_NOR();
+	Registration_POL registration_POL=new Registration_POL();
+	Registration_USA registration_USA=new Registration_USA();
+	Send_Sim send_Sim=new Send_Sim();
+	SwapImsi_Page swapImsi_Page = new SwapImsi_Page();
+	Tickets tickets = new Tickets();
+	Topup_Failure_History topup_Failure_History= new Topup_Failure_History();
+	USA_Family_Plan uSA_Family_Plan=new USA_Family_Plan();
+	USA_Pages uSA_Pages =new USA_Pages();
+	Voucher_Status voucher_Status = new Voucher_Status();
+	Voucher_TopUp_Page voucher_TopUp_Page=new Voucher_TopUp_Page();
+	Registration registration = new Registration();
+	Subscribe_History subscribe_History = new Subscribe_History();
+	OBA_Credit oBA_Credit = new OBA_Credit();
+	Network_Feature network_Feature=new Network_Feature();
+	Security_Policy security_Policy=new Security_Policy();
+	Agent_Profile agent_Profile=new Agent_Profile();
+	Dynamic_Number_Allocation dynamic_Number_Allocation= new Dynamic_Number_Allocation();
+	Swap_Msisdn_Page swap_Msisdn_Page = new Swap_Msisdn_Page();
+	/*Murali-11-07-2017 */ 
+	 RM_Ireland rmIrelandPage = new RM_Ireland();
+	
+	//****************************  Page Model Object ******************************/
+
+	/*---------------------------LAKSHMAN CODE------------------------------------*/
+	
+	/**
+	 * <b>To Launch the application</b>
+	 * @param testdatasheet DataSheetPath from testngXML file
+	 * @param compName Component Name from testngXML file
+	 * @param compDesc Component Desc from testngXML file
+	 * @param totalSteps1 Total Steps from testngXML file
+	 * @param disableSteps disable Steps from testngXML file
+	 * @author <b>Lakshman</b>
+	 * @since <b>13-OCT-16</b>
+	 */
+
+	public synchronized void Launch_App(String testdatasheet,String compName, String disableSteps, int noOfDataSet){
+
+		boolean[] stepStatus=null;
+		int[] reorderedSteps = null;
+		boolean defaultBreak = false;
+
+		testDataFilePathStatic=testdatasheet;
+		testComponentNameStatic=getMethodName();
+		gblrecordsCounterStatic=noOfDataSet;
+
+		if(skipAllComponentsVariable){
+			log.info("Skip Variable is set to TRUE by previous Component. Skiping the Component.");
+			ExtentTestManager.reportStepSkip("<b>Skipping the Component as previous Component FAILED</b>");
+			throw new SkipException("Skipping the Component as Previous Component is failed.");
+		}
+
+		int totalSteps= 13;
+		stepStatus = initializeSteps(totalSteps);
+		try{
+			reorderedSteps=dropDisableSteps(totalSteps,disableSteps);
+
+			for (int step=0; step<reorderedSteps.length; step++){
+				String stepNo="step" + reorderedSteps[step];
+
+				switch (stepNo) {
+				case "step1": stepStatus[step] = LaunchApplication("URL",1);
+				break;
+				case "step2": stepStatus[step] = pageLoadCheck();
+				break;
+				case "step3": stepStatus[step] = noAction();
+				break;
+				case "step4": stepStatus[step] = noAction();
+				break;				
+				case "step5": stepStatus[step] = noAction();
+				break;				
+				case "step6": stepStatus[step] = noAction();
+				break;				
+				case "step7": stepStatus[step] = noAction();
+				break;
+				case "step8": stepStatus[step] = waitUntilExist(cRM_Login_Page.Login_Page("txtbox_UserName"), "Username");
+				break;				
+				case "step9": stepStatus[step] = WebEditEnterUsername(cRM_Login_Page.Login_Page("txtbox_UserName"), "Username", "Login_User_ID", 1);
+				break;
+				case "step10": stepStatus[step] = WebEditEnterPassword(cRM_Login_Page.Login_Page("txtbox_Password"), "Password","Login_Password", 1);  
+				break;
+				case "step11": stepStatus[step] = WebElementClick(cRM_Login_Page.Login_Page("btn_LogIn"), "Login");
+				break;
+				case "step12": stepStatus[step] = pageLoadCheck();
+				break;
+				case "step13": stepStatus[step] = waitUntilExist(cRM_Logout.Logout_Page("menu_Dropdown"), "Menu_Dropdown");
+				break;
+				default: 
+					ExtentTestManager.reportStepFail("Number of Steps mis-match with the Spreadsheet Total/Disable Steps and Steps written in Component", false);
+					defaultBreak=true;
+					break;
+				}
+
+				if(!stepStatus[step]){
+					eventInACaseFailed=true;
+					testCaseStatus=true;
+					if((sysProperty.getProperty("Skip_Component_on_Step_Failure")).equalsIgnoreCase("True")){
+						ExtentTestManager.reportStepInfo("<b>Skipping the Component as EVENT failed</b>");
+						if((sysProperty.getProperty("Skip_All_Components_on_Step_Failure")).equalsIgnoreCase("True")){
+							skipAllComponentsVariable=true;
+						}
+						break;
+					}
+				}
+			}
+
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+
+		}catch(Exception e){
+			log.info("Exception occured in Component --> "+e);
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+		}
+	}
+
+
+	public synchronized void PreCon_APP_GBR_SIMBLOCK_UNBLOCK(String testdatasheet,String compName, String disableSteps, int noOfDataSet){
+
+		boolean[] stepStatus=null;
+		int[] reorderedSteps = null;
+		boolean defaultBreak = false;
+
+		testDataFilePathStatic=testdatasheet;
+		testComponentNameStatic=getMethodName();
+		gblrecordsCounterStatic=noOfDataSet;
+
+		if(skipAllComponentsVariable){
+			log.info("Skip Variable is set to TRUE by previous Component. Skiping the Component.");
+			ExtentTestManager.reportStepSkip("<b>Skipping the Component as previous Component FAILED</b>");
+			throw new SkipException("Skipping the Component as Previous Component is failed.");
+		}
+
+		int totalSteps= 13;
+		stepStatus = initializeSteps(totalSteps);
+		try{
+			reorderedSteps=dropDisableSteps(totalSteps,disableSteps);
+
+			for (int step=0; step<reorderedSteps.length; step++){
+				String stepNo="step" + reorderedSteps[step];
+
+				switch (stepNo) {
+				case "step1": stepStatus[step] = waitUntilExist(settings.settings_Page("menu_Dropdown"), "Menu_Dropdown");
+				break;
+				case "step2": stepStatus[step] = WebElementClick(settings.settings_Page("menu_Dropdown"), "Menu_Dropdown");
+				break;
+				case "step3": stepStatus[step] = WebElementClick(settings.settings_Page("settings_Button"), "Settings_Button");
+				break;
+				case "step4": stepStatus[step] = waitUntilExist(settings.settings_Page("configuration_Button"), "Configuration_Button");
+				break;
+				case "step5": stepStatus[step] = WebElementClick(settings.settings_Page("configuration_Button"), "Configuration_Button");
+				break;
+				case "step6": stepStatus[step] = waitUntilExist(settings.settings_Page("country_Dropdown_GBR"), "Country_Dropdown_GBR");
+				break;
+				case "step7": stepStatus[step] = WebElementClick(settings.settings_Page("country_Dropdown_GBR"), "Country_Dropdown_GBR");
+				break;
+				case "step8": stepStatus[step] = webListDropdownClick(settings.settings_Page("country_DropdownValues_GBR"), "Country_Dropdown_GBR", "CountryBrand_DDValue_GBR", 1);
+				break;
+				case "step9": stepStatus[step] = waitUntilExist(settings.settings_Page("sim_TypeText"), "Sim_TypeText");
+				break;
+				case "step10": stepStatus[step] = enterValuesAndClickEnterBtn(settings.settings_Page("keyEnter"), "Key_Search", "key_TicketIDconfig", 1);
+				break;
+				case "step11": stepStatus[step] = doubleClickOnElement(settings.settings_Page("key_TicketIDconfig"), "TicketIDconfig");
+				break;
+				case "step12": stepStatus[step] = enterValuesAndClickEnterBtn(settings.settings_Page("value_TicketIDconfig"), "TicketIDconfig", "value_TicketIDconfig", 1);
+				break;
+				case "step13": stepStatus[step] = WebElementClick(settings.settings_Page("close_Btn"), "Close_Button");
+				break;
+
+				default: 
+					ExtentTestManager.reportStepFail("Number of Steps mis-match with the Spreadsheet Total/Disable Steps and Steps written in Component", false);
+					defaultBreak=true;
+					break;
+				}
+
+				if(!stepStatus[step]){
+					eventInACaseFailed=true;
+					if((sysProperty.getProperty("Skip_Component_on_Step_Failure")).equalsIgnoreCase("True")){
+						ExtentTestManager.reportStepInfo("<b>Skipping the Component as EVENT failed</b>");
+						if((sysProperty.getProperty("Skip_All_Components_on_Step_Failure")).equalsIgnoreCase("True")){
+							skipAllComponentsVariable=true;
+						}
+						break;
+					}
+				}
+			}
+
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+
+		}catch(Exception e){
+			log.info("Exception occured in Component --> "+e);
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+		}
+	}
+
+	public synchronized void Pre_APP_GBR_SIMBLOCK_UNBLOCK1(String testdatasheet,String compName, String disableSteps, int noOfDataSet){
+
+		boolean[] stepStatus=null;
+		int[] reorderedSteps = null;
+		boolean defaultBreak = false;
+
+		testDataFilePathStatic=testdatasheet;
+		testComponentNameStatic=getMethodName();
+		gblrecordsCounterStatic=noOfDataSet;
+
+		if(skipAllComponentsVariable){
+			log.info("Skip Variable is set to TRUE by previous Component. Skiping the Component.");
+			ExtentTestManager.reportStepSkip("<b>Skipping the Component as previous Component FAILED</b>");
+			throw new SkipException("Skipping the Component as Previous Component is failed.");
+		}
+
+		int totalSteps= 19;
+		stepStatus = initializeSteps(totalSteps);
+		try{
+			reorderedSteps=dropDisableSteps(totalSteps,disableSteps);
+
+			for (int step=0; step<reorderedSteps.length; step++){
+				String stepNo="step" + reorderedSteps[step];
+
+				switch (stepNo) {
+				case "step1": stepStatus[step] = waitUntilExist(settings.settings_Page("menu_Dropdown"), "Menu_Dropdown");
+				break;
+				case "step2": stepStatus[step] = WebElementClick(settings.settings_Page("menu_Dropdown"), "Menu_Dropdown");
+				break;
+				case "step3": stepStatus[step] = WebElementClick(settings.settings_Page("settings_Button"), "Settings_Button");
+				break;
+				case "step4": stepStatus[step] = waitUntilExist(settings.settings_Page("configuration_Button"), "Configuration_Button");
+				break;
+				case "step5": stepStatus[step] = WebElementClick(settings.settings_Page("configuration_Button"), "Configuration_Button");
+				break;
+				case "step6": stepStatus[step] = waitUntilExist(settings.settings_Page("country_Dropdown_GBR"), "Country_Dropdown_GBR");
+				break;
+				case "step7": stepStatus[step] = WebElementClick(settings.settings_Page("country_Dropdown_GBR"), "Country_Dropdown_GBR");
+				break;
+				case "step8": stepStatus[step] = webListDropdownClick(settings.settings_Page("country_DropdownValues_GBR"), "Country_Dropdown_GBR", "CountryBrand_DDValue_GBR", 1);
+				break;
+				case "step9": stepStatus[step] = waitUntilExist(settings.settings_Page("sim_TypeText"), "Sim_TypeText");
+				break;
+				case "step10": stepStatus[step] = enterValuesAndClickEnterBtn(settings.settings_Page("keyEnter"), "Key_Search", "key_TicketIDconfig", 1);
+				break;
+				case "step11": stepStatus[step] = doubleClickOnElement(settings.settings_Page("key_TicketIDconfig"), "TicketIDconfig");
+				break;
+				case "step12": stepStatus[step] = enterValuesAndClickEnterBtn(settings.settings_Page("value_TicketIDconfig"), "TicketIDconfig", "value_TicketIDconfig", 1);
+				break;
+
+				case "step13": stepStatus[step] = enterValuesAndClickEnterBtn(settings.settings_Page("keyEnter"), "Key_Search", "key_TicketIDMinLength", 1);
+				break;
+				case "step14": stepStatus[step] = doubleClickOnElement(settings.settings_Page("key_TicketIDMinLength"), "TicketIDMinLength");
+				break;
+				case "step15": stepStatus[step] = enterValuesAndClickEnterBtn(settings.settings_Page("value_TicketIDMinLength"), "TicketIDMinLength", "value_TicketIDMinLength", 1);
+				break;
+
+				case "step16": stepStatus[step] = enterValuesAndClickEnterBtn(settings.settings_Page("keyEnter"), "Key_Search", "key_TicketIDMaxLength", 1);
+				break;
+				case "step17": stepStatus[step] = doubleClickOnElement(settings.settings_Page("key_TicketIDMaxLength"), "TicketIDMaxLength");
+				break;
+				case "step18": stepStatus[step] = enterValuesAndClickEnterBtn(settings.settings_Page("value_TicketIDMaxLength"), "TicketIDMaxLength", "value_TicketIDMaxLength", 1);
+				break;
+
+				case "step19": stepStatus[step] = WebElementClick(settings.settings_Page("close_Btn"), "Close_Button");
+				break;
+
+				default: 
+					ExtentTestManager.reportStepFail("Number of Steps mis-match with the Spreadsheet Total/Disable Steps and Steps written in Component", false);
+					defaultBreak=true;
+					break;
+				}
+
+				if(!stepStatus[step]){
+					eventInACaseFailed=true;
+					if((sysProperty.getProperty("Skip_Component_on_Step_Failure")).equalsIgnoreCase("True")){
+						ExtentTestManager.reportStepInfo("<b>Skipping the Component as EVENT failed</b>");
+						if((sysProperty.getProperty("Skip_All_Components_on_Step_Failure")).equalsIgnoreCase("True")){
+							skipAllComponentsVariable=true;
+						}
+						break;
+					}
+				}
+			}
+
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+
+		}catch(Exception e){
+			log.info("Exception occured in Component --> "+e);
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+		}
+	}
+
+	public synchronized void Logout_App(String testdatasheet,String compName, String disableSteps, int noOfDataSet){
+
+		boolean[] stepStatus=null;
+		int[] reorderedSteps = null;
+		boolean defaultBreak = false;
+
+		testDataFilePathStatic=testdatasheet;
+		testComponentNameStatic=getMethodName();
+		gblrecordsCounterStatic=noOfDataSet;
+
+		if(skipAllComponentsVariable){
+			log.info("Skip Variable is set to TRUE by previous Component. Skiping the Component.");
+			ExtentTestManager.reportStepSkip("<b>Skipping the Component as previous Component FAILED</b>");
+			throw new SkipException("Skipping the Component as Previous Component is failed.");
+		}
+
+		int totalSteps= 7;
+		stepStatus = initializeSteps(totalSteps);
+		try{
+			reorderedSteps=dropDisableSteps(totalSteps,disableSteps);
+
+			for (int step=0; step<reorderedSteps.length; step++){
+				String stepNo="step" + reorderedSteps[step];
+
+				switch (stepNo) {
+				case "step1": stepStatus[step] = waitUntilExistZoomOut(cRM_Logout.Logout_Page("menu_Dropdown"),  "Homepage_Menu"); 
+				break;
+				case "step2": stepStatus[step] = WebElementClick(cRM_Logout.Logout_Page("menu_Dropdown"), "Homepage_Menu");
+				break;
+				case "step3": stepStatus[step] = PerformAction_MoveToElementAndClick(cRM_Logout.Logout_Page("logout_Button"), "Logout_Button");
+				break;
+				case "step4": stepStatus[step] = alertAccept("Logout Confirmation");
+				break;
+				case "step5": stepStatus[step] = pageLoadCheck();
+				break;
+				case "step6": stepStatus[step] = waitUntilExist(cRM_Login_Page.Login_Page("btn_LogIn"), "Login_Button");
+				break;
+				case "step7": stepStatus[step] = CloseWebBrowser();
+				break;
+				default: 
+					ExtentTestManager.reportStepFail("Number of Steps mis-match with the Spreadsheet Total/Disable Steps and Steps written in Component", false);
+					defaultBreak=true;
+					break;
+				}
+
+				if(!stepStatus[step]){
+					eventInACaseFailed=true;
+					if((sysProperty.getProperty("Skip_Component_on_Step_Failure")).equalsIgnoreCase("True")){
+						ExtentTestManager.reportStepInfo("<b>Skipping the Component as EVENT failed</b>");
+						if((sysProperty.getProperty("Skip_All_Components_on_Step_Failure")).equalsIgnoreCase("True")){
+							skipAllComponentsVariable=true;
+						}
+						break;
+					}
+				}
+			}
+
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+
+		}catch(Exception e){
+			log.info("Exception occured in Component --> "+e);
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+		}
+	}
+
+	public synchronized void Perform_GBR_SIMBLOCK_UNBLOCK(String testdatasheet,String compName, String disableSteps, int noOfDataSet){
+
+		boolean[] stepStatus=null;
+		int[] reorderedSteps = null;
+		boolean defaultBreak = false;
+
+		testDataFilePathStatic=testdatasheet;
+		testComponentNameStatic=getMethodName();
+		gblrecordsCounterStatic=noOfDataSet;
+
+		if(skipAllComponentsVariable){
+			log.info("Skip Variable is set to TRUE by previous Component. Skiping the Component.");
+			ExtentTestManager.reportStepSkip("<b>Skipping the Component as previous Component FAILED</b>");
+			throw new SkipException("Skipping the Component as Previous Component is failed.");
+		}
+
+		int totalSteps= 16;
+		stepStatus = initializeSteps(totalSteps);
+		try{
+			reorderedSteps=dropDisableSteps(totalSteps,disableSteps);
+
+			for (int step=0; step<reorderedSteps.length; step++){
+				String stepNo="step" + reorderedSteps[step];
+
+				switch (stepNo) {
+				case "step1": stepStatus[step] = waitUntilExist(staff_TopUp.staff_TopUp_Page("services_Select"), "Services_Select"); 
+				break;
+				case "step2": stepStatus[step] = WebListSelect(staff_TopUp.staff_TopUp_Page("services_Select"), "Services_Select", "Select_Service", 1);
+				break;
+				case "step3": stepStatus[step] = WebEditEnterText(staff_TopUp.staff_TopUp_Page("mobileNo_Textbox"), "MobileNo", "Mobile_Number", 1);
+				break;
+				case "step4": stepStatus[step] = WebElementClick(staff_TopUp.staff_TopUp_Page("loadSubscriber_Button"), "LoadSubscriber_Button");
+				break;
+				case "step5": stepStatus[step] = waitUntilExist(staff_TopUp.staff_TopUp_Page("staff_MenuDropdown"), "Staff_MenuDropdown");
+				break;
+				case "step6": stepStatus[step] = WebElementClick(staff_TopUp.staff_TopUp_Page("staff_MenuDropdown"), "Staff_MenuDropdown_Button"); waitUntilExist(staff_TopUp.staff_TopUp_Page("simBlock_Button"), "simBlock_Button");
+				break;
+				case "step7": stepStatus[step] = WebElementClick(staff_TopUp.staff_TopUp_Page("simBlock_Button"), "SimBlock_Button"); waitUntilExist(staff_TopUp.staff_TopUp_Page("simBlockUnblock_Button"), "simBlockUnblock_Button");
+				break;
+				case "step8": stepStatus[step] = WebElementClick(staff_TopUp.staff_TopUp_Page("simBlockUnblock_Button"), "Sim_BlockUnblock_Button"); 
+				break;
+				case "step9": stepStatus[step] = waitUntilExist(staff_TopUp.staff_TopUp_Page("ticketIDSIMBlock_TextBox"), "TicketID_TextBox");
+				break;
+				case "step10": stepStatus[step] = WebEditEnterText(staff_TopUp.staff_TopUp_Page("ticketIDSIMBlock_TextBox"), "TicketID", "TicketID", 1);
+				break;
+				case "step11": stepStatus[step] = WebListSelect(staff_TopUp.staff_TopUp_Page("action_Dropdown"), "Action_Dropdown", "SIM_Action", 1);
+				break;
+				case "step12": stepStatus[step] = WebEditEnterText(staff_TopUp.staff_TopUp_Page("comments_TextBox"), "Comments_TextBox", "Comments", 1);
+				break;
+				case "step13": stepStatus[step] = WebElementClick(staff_TopUp.staff_TopUp_Page("approve_Button"), "Approve_Button");
+				break;
+				case "step14": stepStatus[step] = waitUntilExist(staff_TopUp.staff_TopUp_Page("response_Message"), "Response_Message");
+				break;
+				case "step15": stepStatus[step] = WebElementResxKeyValueStaticCompare(staff_TopUp.staff_TopUp_Page("response_Message"), "Response_Message", "Automation_KeyName", 1); 
+				break;
+				case "step16": stepStatus[step] = WebElementClick(staff_TopUp.staff_TopUp_Page("close_button"), "Subscriber Logout");
+				break;
+
+				default: 
+					ExtentTestManager.reportStepFail("Number of Steps mis-match with the Spreadsheet Total/Disable Steps and Steps written in Component", false);
+					defaultBreak=true;
+					break;
+				}
+
+				if(!stepStatus[step]){
+					eventInACaseFailed=true;
+					if((sysProperty.getProperty("Skip_Component_on_Step_Failure")).equalsIgnoreCase("True")){
+						ExtentTestManager.reportStepInfo("<b>Skipping the Component as EVENT failed</b>");
+						if((sysProperty.getProperty("Skip_All_Components_on_Step_Failure")).equalsIgnoreCase("True")){
+							skipAllComponentsVariable=true;
+						}
+						break;
+					}
+				}
+			}
+
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+
+		}catch(Exception e){
+			log.info("Exception occured in Component --> "+e);
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+		}
+	}
+
+	public synchronized void Perform_GBR_SIMBLOCK_UNBLOCK1(String testdatasheet,String compName, String disableSteps, int noOfDataSet){
+
+		boolean[] stepStatus=null;
+		int[] reorderedSteps = null;
+		boolean defaultBreak = false;
+
+		testDataFilePathStatic=testdatasheet;
+		testComponentNameStatic=getMethodName();
+		gblrecordsCounterStatic=noOfDataSet;
+
+		if(skipAllComponentsVariable){
+			log.info("Skip Variable is set to TRUE by previous Component. Skiping the Component.");
+			ExtentTestManager.reportStepSkip("<b>Skipping the Component as previous Component FAILED</b>");
+			throw new SkipException("Skipping the Component as Previous Component is failed.");
+		}
+
+		int totalSteps= 13;
+		stepStatus = initializeSteps(totalSteps);
+		try{
+			reorderedSteps=dropDisableSteps(totalSteps,disableSteps);
+
+			for (int step=0; step<reorderedSteps.length; step++){
+				String stepNo="step" + reorderedSteps[step];
+				switch (stepNo) {
+				case "step1": stepStatus[step] = waitUntilExist(staff_TopUp.staff_TopUp_Page("services_Select"), "Services_Select"); 
+				break;
+				case "step2": stepStatus[step] = WebListSelect(staff_TopUp.staff_TopUp_Page("services_Select"), "Services_Select", "Select_Service", 1);
+				break;
+				case "step3": stepStatus[step] = WebEditEnterText(staff_TopUp.staff_TopUp_Page("mobileNo_Textbox"), "MobileNo", "Mobile_Number", 1);
+				break;
+				case "step4": stepStatus[step] = WebElementClick(staff_TopUp.staff_TopUp_Page("loadSubscriber_Button"), "LoadSubscriber_Button");
+				break;
+				case "step5": stepStatus[step] = waitUntilExist(staff_TopUp.staff_TopUp_Page("staff_MenuDropdown"), "Staff_MenuDropdown");
+				break;
+				case "step6": stepStatus[step] = WebElementClick(staff_TopUp.staff_TopUp_Page("staff_MenuDropdown"), "Staff_MenuDropdown_Button"); waitUntilExist(staff_TopUp.staff_TopUp_Page("simBlock_Button"), "simBlock_Button");
+				break;
+				case "step7": stepStatus[step] = WebElementClick(staff_TopUp.staff_TopUp_Page("simBlock_Button"), "SimBlock_Button"); waitUntilExist(staff_TopUp.staff_TopUp_Page("simBlockUnblock_Button"), "simBlockUnblock_Button");
+				break;
+				case "step8": stepStatus[step] = WebElementClick(staff_TopUp.staff_TopUp_Page("simBlockUnblock_Button"), "Sim_BlockUnblock_Button"); 
+				break;
+				case "step9": stepStatus[step] = waitUntilExist(staff_TopUp.staff_TopUp_Page("ticketIDSIMBlock_TextBox"), "TicketID_TextBox");
+				break;
+				case "step10": stepStatus[step] = enterTextByKeyboard(staff_TopUp.staff_TopUp_Page("ticketIDSIMBlock_TextBox"), "TicketID", "TicketID", 1); WebElementValueCompare(staff_TopUp.staff_TopUp_Page("ticketIDSIMBlock_TextBox"), "TicketID","Expected_TicketID", 1);
+				break;
+				case "step11": stepStatus[step] = WebListSelect(staff_TopUp.staff_TopUp_Page("action_Dropdown"), "Action_Dropdown", "SIM_Action", 1);
+				break;
+				case "step12": stepStatus[step] = enterTextByKeyboard(staff_TopUp.staff_TopUp_Page("comments_TextBox"), "Comments_TextBox","Comments", 1); WebElementValueCompare(staff_TopUp.staff_TopUp_Page("comments_TextBox"), "Comments_TextBox","Expected_Comments", 1);
+				break;
+				case "step13": stepStatus[step] = WebElementClick(staff_TopUp.staff_TopUp_Page("close_button"), "Subscriber Logout");
+				break;
+
+				default: 
+					ExtentTestManager.reportStepFail("Number of Steps mis-match with the Spreadsheet Total/Disable Steps and Steps written in Component", false);
+					defaultBreak=true;
+					break;
+				}
+
+				if(!stepStatus[step]){
+					eventInACaseFailed=true;
+					if((sysProperty.getProperty("Skip_Component_on_Step_Failure")).equalsIgnoreCase("True")){
+						ExtentTestManager.reportStepInfo("<b>Skipping the Component as EVENT failed</b>");
+						if((sysProperty.getProperty("Skip_All_Components_on_Step_Failure")).equalsIgnoreCase("True")){
+							skipAllComponentsVariable=true;
+						}
+						break;
+					}
+				}
+			}
+
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+
+		}catch(Exception e){
+			log.info("Exception occured in Component --> "+e);
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+		}
+	}
+
+	public synchronized void Open_SQL_Connection_GBR(String testdatasheet,String compName, String disableSteps, int noOfDataSet){
+
+		boolean[] stepStatus=null;
+		int[] reorderedSteps = null;
+		boolean defaultBreak = false;
+
+		testDataFilePathStatic=testdatasheet;
+		testComponentNameStatic=getMethodName();
+		gblrecordsCounterStatic=noOfDataSet;
+
+		if(skipAllComponentsVariable){
+			log.info("Skip Variable is set to TRUE by previous Component. Skiping the Component.");
+			ExtentTestManager.reportStepSkip("<b>Skipping the Component as previous Component FAILED</b>");
+			throw new SkipException("Skipping the Component as Previous Component is failed.");
+		}
+
+		int totalSteps= 1;
+		stepStatus = initializeSteps(totalSteps);
+		try{
+			reorderedSteps=dropDisableSteps(totalSteps,disableSteps);
+
+			for (int step=0; step<reorderedSteps.length; step++){
+				String stepNo="step" + reorderedSteps[step];
+				switch (stepNo) {
+				case "step1": stepStatus[step] = SQLDBOpenConnection(property.getProperty("SQL_Server_GBR"), property.getProperty("SQL_Server_DB_Name_GBR"), property.getProperty("SQL_Server_UID_GBR"), property.getProperty("SQL_Server_PWD_GBR")); 
+				break;
+
+				default: 
+					ExtentTestManager.reportStepFail("Number of Steps mis-match with the Spreadsheet Total/Disable Steps and Steps written in Component", false);
+					defaultBreak=true;
+					break;
+				}
+
+				if(!stepStatus[step]){
+					eventInACaseFailed=true;
+					if((sysProperty.getProperty("Skip_Component_on_Step_Failure")).equalsIgnoreCase("True")){
+						ExtentTestManager.reportStepInfo("<b>Skipping the Component as EVENT failed</b>");
+						if((sysProperty.getProperty("Skip_All_Components_on_Step_Failure")).equalsIgnoreCase("True")){
+							skipAllComponentsVariable=true;
+						}
+						break;
+					}
+				}
+			}
+
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+
+		}catch(Exception e){
+			log.info("Exception occured in Component --> "+e);
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+		}
+	}
+
+	public synchronized void Close_SQL_Connection(String testdatasheet,String compName, String disableSteps, int noOfDataSet){
+
+		boolean[] stepStatus=null;
+		int[] reorderedSteps = null;
+		boolean defaultBreak = false;
+
+		testDataFilePathStatic=testdatasheet;
+		testComponentNameStatic=getMethodName();
+		gblrecordsCounterStatic=noOfDataSet;
+
+		if(skipAllComponentsVariable){
+			log.info("Skip Variable is set to TRUE by previous Component. Skiping the Component.");
+			ExtentTestManager.reportStepSkip("<b>Skipping the Component as previous Component FAILED</b>");
+			throw new SkipException("Skipping the Component as Previous Component is failed.");
+		}
+
+		int totalSteps= 1;
+		stepStatus = initializeSteps(totalSteps);
+		try{
+			reorderedSteps=dropDisableSteps(totalSteps,disableSteps);
+
+			for (int step=0; step<reorderedSteps.length; step++){
+				String stepNo="step" + reorderedSteps[step];
+				switch (stepNo) {
+				case "step1": stepStatus[step] = SQLDBCloseConnection(); 
+				break;
+
+				default: 
+					ExtentTestManager.reportStepFail("Number of Steps mis-match with the Spreadsheet Total/Disable Steps and Steps written in Component", false);
+					defaultBreak=true;
+					break;
+				}
+
+				if(!stepStatus[step]){
+					eventInACaseFailed=true;
+					if((sysProperty.getProperty("Skip_Component_on_Step_Failure")).equalsIgnoreCase("True")){
+						ExtentTestManager.reportStepInfo("<b>Skipping the Component as EVENT failed</b>");
+						if((sysProperty.getProperty("Skip_All_Components_on_Step_Failure")).equalsIgnoreCase("True")){
+							skipAllComponentsVariable=true;
+						}
+						break;
+					}
+				}
+			}
+
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+
+		}catch(Exception e){
+			log.info("Exception occured in Component --> "+e);
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+		}
+	}
+
+	public synchronized void Close_SQL_Connection_TT(String testdatasheet,String compName, String disableSteps, int noOfDataSet){
+
+		boolean[] stepStatus=null;
+		int[] reorderedSteps = null;
+		boolean defaultBreak = false;
+
+		testDataFilePathStatic=testdatasheet;
+		testComponentNameStatic=getMethodName();
+		gblrecordsCounterStatic=noOfDataSet;
+
+		if(skipAllComponentsVariable){
+			log.info("Skip Variable is set to TRUE by previous Component. Skiping the Component.");
+			ExtentTestManager.reportStepSkip("<b>Skipping the Component as previous Component FAILED</b>");
+			throw new SkipException("Skipping the Component as Previous Component is failed.");
+		}
+
+		int totalSteps= 1;
+		stepStatus = initializeSteps(totalSteps);
+		try{
+			reorderedSteps=dropDisableSteps(totalSteps,disableSteps);
+
+			for (int step=0; step<reorderedSteps.length; step++){
+				String stepNo="step" + reorderedSteps[step];
+				switch (stepNo) {
+				case "step1": stepStatus[step] = SQLDBCloseConnection_TT(); 
+				break;
+
+				default: 
+					ExtentTestManager.reportStepFail("Number of Steps mis-match with the Spreadsheet Total/Disable Steps and Steps written in Component", false);
+					defaultBreak=true;
+					break;
+				}
+
+				if(!stepStatus[step]){
+					eventInACaseFailed=true;
+					if((sysProperty.getProperty("Skip_Component_on_Step_Failure")).equalsIgnoreCase("True")){
+						ExtentTestManager.reportStepInfo("<b>Skipping the Component as EVENT failed</b>");
+						if((sysProperty.getProperty("Skip_All_Components_on_Step_Failure")).equalsIgnoreCase("True")){
+							skipAllComponentsVariable=true;
+						}
+						break;
+					}
+				}
+			}
+
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+
+		}catch(Exception e){
+			log.info("Exception occured in Component --> "+e);
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+		}
+	}
+
+	public synchronized void Open_RRBS_Connection(String testdatasheet,String compName, String disableSteps, int noOfDataSet){
+
+		boolean[] stepStatus=null;
+		int[] reorderedSteps = null;
+		boolean defaultBreak = false;
+
+		testDataFilePathStatic=testdatasheet;
+		testComponentNameStatic=getMethodName();
+		gblrecordsCounterStatic=noOfDataSet;
+
+		if(skipAllComponentsVariable){
+			log.info("Skip Variable is set to TRUE by previous Component. Skiping the Component.");
+			ExtentTestManager.reportStepSkip("<b>Skipping the Component as previous Component FAILED</b>");
+			throw new SkipException("Skipping the Component as Previous Component is failed.");
+		}
+
+		int totalSteps= 1;
+		stepStatus = initializeSteps(totalSteps);
+		try{
+			reorderedSteps=dropDisableSteps(totalSteps,disableSteps);
+
+			for (int step=0; step<reorderedSteps.length; step++){
+				String stepNo="step" + reorderedSteps[step];
+				switch (stepNo) {
+				case "step1": stepStatus[step] = RRBSDBOpenConnection("RRBS_DB_Server", "RRBS_DB_Portnumber", "RRBS_DB_Name", "RRBS_DB_Username", "RRBS_DB_Password"); 
+				break;
+
+				default: 
+					ExtentTestManager.reportStepFail("Number of Steps mis-match with the Spreadsheet Total/Disable Steps and Steps written in Component", false);
+					defaultBreak=true;
+					break;
+				}
+
+				if(!stepStatus[step]){
+					eventInACaseFailed=true;
+					if((sysProperty.getProperty("Skip_Component_on_Step_Failure")).equalsIgnoreCase("True")){
+						ExtentTestManager.reportStepInfo("<b>Skipping the Component as EVENT failed</b>");
+						if((sysProperty.getProperty("Skip_All_Components_on_Step_Failure")).equalsIgnoreCase("True")){
+							skipAllComponentsVariable=true;
+						}
+						break;
+					}
+				}
+			}
+
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+
+		}catch(Exception e){
+			log.info("Exception occured in Component --> "+e);
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+		}
+	}
+
+	public synchronized void Close_RRBS_Connection(String testdatasheet,String compName, String disableSteps, int noOfDataSet){
+
+		boolean[] stepStatus=null;
+		int[] reorderedSteps = null;
+		boolean defaultBreak = false;
+
+		testDataFilePathStatic=testdatasheet;
+		testComponentNameStatic=getMethodName();
+		gblrecordsCounterStatic=noOfDataSet;
+
+		if(skipAllComponentsVariable){
+			log.info("Skip Variable is set to TRUE by previous Component. Skiping the Component.");
+			ExtentTestManager.reportStepSkip("<b>Skipping the Component as previous Component FAILED</b>");
+			throw new SkipException("Skipping the Component as Previous Component is failed.");
+		}
+
+		int totalSteps= 1;
+		stepStatus = initializeSteps(totalSteps);
+		try{
+			reorderedSteps=dropDisableSteps(totalSteps,disableSteps);
+
+			for (int step=0; step<reorderedSteps.length; step++){
+				String stepNo="step" + reorderedSteps[step];
+				switch (stepNo) {
+				case "step1": stepStatus[step] = RRBSDBCloseConnection(); 
+				break;
+
+				default: 
+					ExtentTestManager.reportStepFail("Number of Steps mis-match with the Spreadsheet Total/Disable Steps and Steps written in Component", false);
+					defaultBreak=true;
+					break;
+				}
+
+				if(!stepStatus[step]){
+					eventInACaseFailed=true;
+					if((sysProperty.getProperty("Skip_Component_on_Step_Failure")).equalsIgnoreCase("True")){
+						ExtentTestManager.reportStepInfo("<b>Skipping the Component as EVENT failed</b>");
+						if((sysProperty.getProperty("Skip_All_Components_on_Step_Failure")).equalsIgnoreCase("True")){
+							skipAllComponentsVariable=true;
+						}
+						break;
+					}
+				}
+			}
+
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+
+		}catch(Exception e){
+			log.info("Exception occured in Component --> "+e);
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+		}
+	}
+
+	public synchronized void PreCon_DB_GBR_SIMBLOCK_UNBLOCK(String testdatasheet,String compName, String disableSteps, int noOfDataSet){
+
+		boolean[] stepStatus=null;
+		int[] reorderedSteps = null;
+		boolean defaultBreak = false;
+
+		testDataFilePathStatic=testdatasheet;
+		testComponentNameStatic=getMethodName();
+		gblrecordsCounterStatic=noOfDataSet;
+
+		if(skipAllComponentsVariable){
+			log.info("Skip Variable is set to TRUE by previous Component. Skiping the Component.");
+			ExtentTestManager.reportStepSkip("<b>Skipping the Component as previous Component FAILED</b>");
+			throw new SkipException("Skipping the Component as Previous Component is failed.");
+		}
+
+		int totalSteps= 4;
+		stepStatus = initializeSteps(totalSteps);
+		try{
+			reorderedSteps=dropDisableSteps(totalSteps,disableSteps);
+
+			for (int step=0; step<reorderedSteps.length; step++){
+				String stepNo="step" + reorderedSteps[step];
+				switch (stepNo) {
+				case "step1": stepStatus[step] = SQLDBDelete("SQL_SIMBLOCK_TABLENAME", "SQL_MSISDN_CONDITION", 1); 
+				break;
+				case "step2": stepStatus[step] = SQLDBDelete("SQL_MSISDNBLOCK_TABLENAME", "SQL_MSISDN_CONDITION", 1); 
+				break;
+				case "step3": stepStatus[step] = SQLDBUpdate("SQL_MSTACCOUNT_TABLENAME", "SQL_MSTACCOUNT_COLUMNNAME", "SQL_MSTACCOUNT_COLUMNVALUE", "SQL_MSISDN_CONDITION", 1); 
+				break;
+				case "step4": stepStatus[step] = RRBSDBUpdate("RRBS_SUBSCRIBER_TABLENAME", "RRBS_SUBSCRIBER_COLUMNNAME", "RRBS_SUBSCRIBER_COLUMN_VALUE", "RRBS_SUBSCRIBER_CONDITION", 1); 
+				break;
+
+				default: 
+					ExtentTestManager.reportStepFail("Number of Steps mis-match with the Spreadsheet Total/Disable Steps and Steps written in Component", false);
+					defaultBreak=true;
+					break;
+				}
+
+				if(!stepStatus[step]){
+					eventInACaseFailed=true;
+					if((sysProperty.getProperty("Skip_Component_on_Step_Failure")).equalsIgnoreCase("True")){
+						ExtentTestManager.reportStepInfo("<b>Skipping the Component as EVENT failed</b>");
+						if((sysProperty.getProperty("Skip_All_Components_on_Step_Failure")).equalsIgnoreCase("True")){
+							skipAllComponentsVariable=true;
+						}
+						break;
+					}
+				}
+			}
+
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+
+		}catch(Exception e){
+			log.info("Exception occured in Component --> "+e);
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+		}
+	}
+
+	public synchronized void Postcon_GBR_SIMBLOCK_UNBLOCK(String testdatasheet,String compName, String disableSteps, int noOfDataSet){
+
+		boolean[] stepStatus=null;
+		int[] reorderedSteps = null;
+		boolean defaultBreak = false;
+
+		testDataFilePathStatic=testdatasheet;
+		testComponentNameStatic=getMethodName();
+		gblrecordsCounterStatic=noOfDataSet;
+
+		if(skipAllComponentsVariable){
+			log.info("Skip Variable is set to TRUE by previous Component. Skiping the Component.");
+			ExtentTestManager.reportStepSkip("<b>Skipping the Component as previous Component FAILED</b>");
+			throw new SkipException("Skipping the Component as Previous Component is failed.");
+		}
+
+		int totalSteps= 10;
+		stepStatus = initializeSteps(totalSteps);
+		try{
+			reorderedSteps=dropDisableSteps(totalSteps,disableSteps);
+
+			for (int step=0; step<reorderedSteps.length; step++){
+				String stepNo="step" + reorderedSteps[step];
+				switch (stepNo) {
+				case "step1": stepStatus[step] = SQLDBSelect("SIMBLOCK_TABLE","SIMBLOCK_MSISDN_COLUMN","SQL_MSISDN_CONDITION","SIMBLOCK_MSISDN_VALUE",1); 
+				break;
+				case "step2": stepStatus[step] = SQLDBSelect("SIMBLOCK_TABLE", "SIMBLOCK_TicketId_COLUMN", "SQL_MSISDN_CONDITION", "SIMBLOCK_TicketId_VALUE", 1); 
+				break;
+				case "step3": stepStatus[step] = SQLDBSelect("SIMBLOCK_TABLE", "SIMBLOCK_Reason_COLUMN", "SQL_MSISDN_CONDITION", "SIMBLOCK_Reason_VALUE", 1); 
+				break;
+				case "step4": stepStatus[step] = SQLDBDateCompare("SIMBLOCK_TABLE", "SIMBLOCK_SubmitDate_COLUMN", "SQL_MSISDN_CONDITION", "dd/MM/yyyy", 1); 
+				break;
+				case "step5": stepStatus[step] = SQLDBSelect("SIMBLOCK_TABLE", "SIMBLOCK_Status_COLUMN", "SQL_MSISDN_CONDITION", "SIMBLOCK_Status_VALUE", 1); 
+				break;
+				case "step6": stepStatus[step] = SQLDBSelect("SIMBLOCK_TABLE", "SIMBLOCK_SubmitedBy_COLUMN", "SQL_MSISDN_CONDITION", "SIMBLOCK_SubmitedBy_VALUE", 1); 
+				break;
+				case "step7": stepStatus[step] = SQLDBSelect("SIMBLOCK_TABLE","SIMBLOCK_AuthorisedBy_COLUMN", "SQL_MSISDN_CONDITION", "SIMBLOCK_AuthorisedBy_VALUE", 1); 
+				break;
+				case "step8": stepStatus[step] = SQLDBDateCompare("SIMBLOCK_TABLE", "SIMBLOCK_AuthorisedDate_COLUMN", "SQL_MSISDN_CONDITION", "dd/MM/yyyy", 1); 
+				break;
+				case "step9": stepStatus[step] = SQLDBSelect("MSTACCOUNT_TABLENAME", "MSTACCOUNT_COLUMNNAME", "SQL_MSISDN_CONDITION", "MSTACCOUNT_COLUMNVALUE", 1); 
+				break;
+				case "step10": stepStatus[step] = RRBSDBSelect("RRBS_SUBSCRIBER_TABLENAME", "RRBS_SUBSCRIBER_COLUMNNAME", "RRBS_SUBSCRIBER_CONDITION", "RRBS_SUBSCRIBER_COLUMN_VALUE", 1); 
+				break;
+
+				default: 
+					ExtentTestManager.reportStepFail("Number of Steps mis-match with the Spreadsheet Total/Disable Steps and Steps written in Component", false);
+					defaultBreak=true;
+					break;
+				}
+
+				if(!stepStatus[step]){
+					eventInACaseFailed=true;
+					if((sysProperty.getProperty("Skip_Component_on_Step_Failure")).equalsIgnoreCase("True")){
+						ExtentTestManager.reportStepInfo("<b>Skipping the Component as EVENT failed</b>");
+						if((sysProperty.getProperty("Skip_All_Components_on_Step_Failure")).equalsIgnoreCase("True")){
+							skipAllComponentsVariable=true;
+						}
+						break;
+					}
+				}
+			}
+
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+
+		}catch(Exception e){
+			log.info("Exception occured in Component --> "+e);
+			validateComponentStatus(reorderedSteps, stepStatus, defaultBreak, Thread.currentThread().getStackTrace()[1].getMethodName());
+		}
+	}
+
+	
+		//*********************************************************************************MURALI-END******************************************************************
+	
+
+}
