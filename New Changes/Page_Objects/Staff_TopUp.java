@@ -1,13 +1,40 @@
 package Page_Objects;
 
+import java.io.File;
 import java.util.Hashtable;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+
+import utils.ReadExcel;
 import wrappers.FunctionLibrary;
 
 public class Staff_TopUp extends FunctionLibrary{
 
 	public synchronized String staff_TopUp_Page(String locator){
 
+		String multiLanguageExcelPath = System.getProperty("user.dir")+property.getProperty("resourceMgmtfilekeyPath");
+
+		String languageName = property.getProperty("Language_Required");
+		
+		ReadExcel excel=new ReadExcel(multiLanguageExcelPath);
+		
+		String[] xpathsplittext = null;
+		String resourceFileName = null;
+		String filePathLocation = null;
+		NodeList nodeList=null;
+		String Resxfilevalue = null;
+		String[] SplitResxfilevalue = null;
+		String finalresxfilevalue = null;
+		
 		try{
 			Hashtable<String, String> hs = new Hashtable<String, String>();
 			hs.put("services_Select", "id#loadType");
@@ -44,8 +71,8 @@ public class Staff_TopUp extends FunctionLibrary{
 			hs.put("comments_TextBox", "id#Comments");
 			hs.put("reset_Button", "id#btnPendingReset");
 			hs.put("response_Message", "id#responseMessage");
-			hs.put("close_button", "xpath#//li[@title='Subscriber Logout']");
-			hs.put("header_CloseBtn", "xpath#//li[@class='close-icon']");
+			hs.put("close_button", "xpath#//div[@class='close-icon close-view-icon']");
+			hs.put("header_CloseBtn", "xpath#//div[@class='close-icon close-view-icon']");
 			hs.put("Topup_Type", "id#ddlTopupType");
 			hs.put("Bundle_Auto_Renewal", "id#chkBundleARenewal");
 			hs.put("radio_Account_Balance", "id#rdbAccBalance");
@@ -60,7 +87,68 @@ public class Staff_TopUp extends FunctionLibrary{
 			hs.put("Yes_button_1", "id#btnTopupYesE");
 			hs.put("Popup_Alert_2", "xpath#.//*[@id='ModalChkSuffBal']/div/div/div[2]/p[2]");
 			hs.put("Yes_button_2", "id#btnTopupYesSB");
-			return hs.get(locator);
+			
+			String xpathValue = hs.get(locator);
+			
+			if(xpathValue.contains(">>")) {
+			
+				if(xpathValue.contains("title=")){
+			
+				System.out.println("title()");	
+					
+				Pattern pattern = Pattern.compile("xpath(.*)title(.*)='([\\sa-zA-Z>]+)']");
+				
+				Matcher matcher = pattern.matcher(xpathValue);
+				
+				while(matcher.find()){
+					
+					String splittedXpath = matcher.group(3);					
+					
+					System.out.println("splittedXpath3 :"+splittedXpath);
+					
+					xpathsplittext = splittedXpath.split(">>");
+					
+					resourceFileName = xpathsplittext[0] + excel.RetrieveAutomationKeyFromExcel("Extension_Language", "Resx_Extension", languageName);
+					
+					filePathLocation=property.getProperty("resourcesFilePath_GBR");
+					String resourceFileToGetValue=filePathLocation+"\\"+resourceFileName;
+					log.info("File path is "+resourceFileToGetValue);
+					File file=new File("//\\"+resourceFileToGetValue);
+
+					String commonAttribute=property.getProperty("attributeCommonValue");
+					String fullAttributewithName=commonAttribute+"[@name='"+ xpathsplittext[1] +"']/value";
+					log.info("Attribute to Retrieve Node value is : "+fullAttributewithName);
+
+					DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
+					DocumentBuilder builder=factory.newDocumentBuilder();
+					Document document=builder.parse(file);
+					document.getDocumentElement().normalize();
+					XPath xpath=XPathFactory.newInstance().newXPath();
+					nodeList=(NodeList)xpath.compile(fullAttributewithName).evaluate(document,XPathConstants.NODESET);
+
+					Resxfilevalue = nodeList.item(0).getTextContent();
+					
+					if(Resxfilevalue.contains("'")){
+						SplitResxfilevalue = Resxfilevalue.split("'");
+						
+						for(int m = 1; m <= SplitResxfilevalue.length -1; m++){
+							if(m < 2){
+								finalresxfilevalue = SplitResxfilevalue[m-1] +"',\"'\",'"+ SplitResxfilevalue[m];
+							} else{
+								finalresxfilevalue = finalresxfilevalue + "',\"'\",'"+ SplitResxfilevalue[m];
+							}
+						}
+						
+						xpathValue =  xpathValue.replaceAll("'"+ splittedXpath +"'", "concat('"+ finalresxfilevalue +"')");
+					} else{
+						xpathValue = xpathValue.replaceAll(splittedXpath, Resxfilevalue);
+					}
+
+					} 
+				
+				}
+			}
+			return xpathValue;
 
 		}catch(Exception e){
 			log.info("Error occurred in POM classes :"+e);
@@ -97,6 +185,7 @@ public class Staff_TopUp extends FunctionLibrary{
 			hs.put("TicketinPopup_Label", "xpath#//div[contains(text(), 'Ticket ID:')]");
 			hs.put("TicketinPopupError_Label", "xpath#//div[@class='modal fade in']//*//*//div[@class='c']");
 			hs.put("closeBox_Button", "id#ErrmsgClose");
+			
 			return hs.get(locator);
 		}catch(Exception e){
 			log.info("Error occurred in POM classes :"+e);
