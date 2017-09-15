@@ -19,6 +19,7 @@ public class Settings extends FunctionLibrary{
 
 	public synchronized String settings_Page(String locator){
 
+	
 		try{
 			Hashtable<String, String> hs = new Hashtable<String, String>();
 
@@ -158,6 +159,7 @@ public class Settings extends FunctionLibrary{
 			hs.put("country_Dropdown_AUT", "xpath#//img[@alt='AUT']/following-sibling::span[@class='caret']");
 			hs.put("country_DropdownValues_AUT", "xpath#//img[@alt='AUT']/following-sibling::span[@class='caret']/parent::div/following-sibling::ul//li");
 			
+			hs.put("successMsg", "id#msgManageConfig");
 
 			return hs.get(locator);
 		}catch(Exception e){
@@ -189,25 +191,29 @@ public class Settings extends FunctionLibrary{
 		try{
 			String countryName =RetrieveTestDataValue(filePath, compName, strCountryName,gblrecordsCounter, 1);
 			Hashtable<String, String> hs = new Hashtable<String, String>();
-			if(countryName.equalsIgnoreCase("GBR")){
-				hs.put("country_Dropdown", "xpath#//img[@alt='GBR']/following-sibling::span[@class='caret']");
-				hs.put("country_DropdownValues", "xpath#//img[@alt='GBR']/following-sibling::span[@class='caret']/parent::div/following-sibling::ul//li");
+			
+			/*if(countryName.equalsIgnoreCase("GBR")){
+				hs.put("country_Dropdown", "xpath#//img[@alt="+countryName+"]/following-sibling::span[@class='caret']");
+				hs.put("country_DropdownValues", "xpath#//img[@alt='"+countryName+"']/following-sibling::span[@class='caret']/parent::div/following-sibling::ul//li");
 			}else if(countryName.equalsIgnoreCase("POL")){
-				hs.put("country_Dropdown", "xpath#//img[@alt='POL']/following-sibling::span[@class='caret']");
-				hs.put("country_DropdownValues", "xpath#//img[@alt='POL']/following-sibling::span[@class='caret']/parent::div/following-sibling::ul//li");
+				hs.put("country_Dropdown", "xpath#//img[@alt='"+countryName+"']/following-sibling::span[@class='caret']");
+				hs.put("country_DropdownValues", "xpath#//img[@alt='"+countryName+"']/following-sibling::span[@class='caret']/parent::div/following-sibling::ul//li");
 			}else if(countryName.equalsIgnoreCase("USA")){
-				hs.put("country_Dropdown", "xpath#//img[@alt='USA']/following-sibling::span[@class='caret']");
-				hs.put("country_DropdownValues", "xpath#//img[@alt='USA']/following-sibling::span[@class='caret']/parent::div/following-sibling::ul//li");
+				hs.put("country_Dropdown", "xpath#//img[@alt='"+countryName+"']/following-sibling::span[@class='caret']");
+				hs.put("country_DropdownValues", "xpath#//img[@alt='"+countryName+"']/following-sibling::span[@class='caret']/parent::div/following-sibling::ul//li");
 			}else if(countryName.equalsIgnoreCase("AUT")){
-				hs.put("country_Dropdown", "xpath#//img[@alt='AUT']/following-sibling::span[@class='caret']");
-				hs.put("country_DropdownValues", "xpath#//img[@alt='AUT']/following-sibling::span[@class='caret']/parent::div/following-sibling::ul//li");
+				hs.put("country_Dropdown", "xpath#//img[@alt='"+countryName+"']/following-sibling::span[@class='caret']");
+				hs.put("country_DropdownValues", "xpath#//img[@alt='"+countryName+"']/following-sibling::span[@class='caret']/parent::div/following-sibling::ul//li");
 			}else if(countryName.equalsIgnoreCase("FRA")){
-				hs.put("country_Dropdown", "xpath#//img[@alt='FRA']/following-sibling::span[@class='caret']");
-				hs.put("country_DropdownValues", "xpath#//img[@alt='FRA']/following-sibling::span[@class='caret']/parent::div/following-sibling::ul//li");
+				hs.put("country_Dropdown", "xpath#//img[@alt='"+countryName+"']/following-sibling::span[@class='caret']");
+				hs.put("country_DropdownValues", "xpath#//img[@alt='"+countryName+"']/following-sibling::span[@class='caret']/parent::div/following-sibling::ul//li");
 			}else if(countryName.equalsIgnoreCase("NOR")){
-				hs.put("country_Dropdown", "xpath#//img[@alt='NOR']/following-sibling::span[@class='caret']");
-				hs.put("country_DropdownValues", "xpath#//img[@alt='NOR']/following-sibling::span[@class='caret']/parent::div/following-sibling::ul//li");
-			}
+				hs.put("country_Dropdown", "xpath#//img[@alt='"+countryName+"']/following-sibling::span[@class='caret']");
+				hs.put("country_DropdownValues", "xpath#//img[@alt='"+countryName+"']/following-sibling::span[@class='caret']/parent::div/following-sibling::ul//li");
+			}*/
+			
+			hs.put("country_Dropdown", "xpath#//img[@alt='"+countryName+"']/following-sibling::span[@class='caret']");
+			hs.put("country_DropdownValues", "xpath#//img[@alt='"+countryName+"']/following-sibling::span[@class='caret']/parent::div/following-sibling::ul//li");
 			
 			return hs.get(locator);
 		}catch(Exception e){
