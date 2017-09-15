@@ -6,8 +6,8 @@ import wrappers.FunctionLibrary;
 
 public class Send_Sim extends FunctionLibrary{
 	
-public synchronized String Send_Sim_Page(String locator){
-		
+	public synchronized String Send_Sim_Page(String locator){
+	
 		try{
 		Hashtable<String, String> hs = new Hashtable<String, String>();
 		hs.put("Send_Sim", "id#btnSendSim");
@@ -108,12 +108,13 @@ public synchronized String Send_Sim_Page(String locator){
 		hs.put("Addon_Submit", "id#btnplanAddOnSubmit");
 		hs.put("Promo_Code", "id#txtSendSimPromoCode");
 		hs.put("Apply_Promo", "id#btnSenssimPromo");
-		hs.put("close_button", "xpath#//span[@class='close-icon']");
+		hs.put("close_button", "xpath#//div[@class='close-icon close-view-icon']");
 		//ADDED BY MURALI
 		hs.put("IssueDate", "id#paymentCRM_IssueDate");
 		hs.put("IssueNumber", "id#txtIssueNumber");
 		hs.put("INA_Auto_Renewal", "id#chkAddOnAutoRenewal");
 		hs.put("NA_Auto_Renewal", "id#chkplanAutoRenewal");
+		
 		return hs.get(locator);
 		
 		}catch(Exception e){
