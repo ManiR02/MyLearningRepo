@@ -1,0 +1,184 @@
+package com.test.adhoc;
+
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.StringWriter;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
+
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.methods.StringRequestEntity;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+
+import com.sun.security.ntlm.Client;
+
+public class AdhocSoapRequest {
+
+	static XSSFWorkbook workbook = null;
+	static DocumentBuilderFactory documentfactory = null;
+	static DocumentBuilder docBuilder = null;
+	static Document document = null;
+	static XPath xpath = null;
+	static XPathFactory xpathFact = null;
+	static StringBuilder xmlBuilder = null;
+	static ByteArrayInputStream ips = null;
+	static NodeList nodeList = null;
+	static TransformerFactory transFactory = null;
+	static Transformer transformer = null;
+	static StringWriter writer = null;
+	
+	public static String readExcel(){
+		
+		try{
+		FileInputStream fs = new FileInputStream(new File("TestNGXMLs/Input.xlsx"));
+		workbook = new XSSFWorkbook(fs);
+		XSSFSheet sheet = workbook.getSheetAt(0);
+		int rowCount = sheet.getLastRowNum();
+		System.out.println("rowCount :"+rowCount);
+		int columnCount = sheet.getRow(rowCount).getLastCellNum();
+		System.out.println("columnCount :"+columnCount);
+		for(int i = 0; i <= rowCount; i++){
+			XSSFRow row = sheet.getRow(i);
+			for(int j = 0; j <= columnCount; j++){
+				XSSFCell cell = row.getCell(j); 
+				String cellData = cell.getStringCellValue();
+//				System.out.println("cellData :"+cellData);
+				return cellData;
+					}
+				}
+			}catch(Exception e){
+		}
+		return null;
+	}
+	
+	
+	public static void checkSOAPRequest(){
+		
+		try{
+		String serviceURL = "http://192.168.110.157:2277/Service.asmx";
+		PostMethod post = new PostMethod(serviceURL);
+		//To read the XML format by using Document Builder
+		documentfactory = DocumentBuilderFactory.newInstance();
+		docBuilder = documentfactory.newDocumentBuilder();
+		xmlBuilder = new StringBuilder();
+		xmlBuilder.append(readExcel());
+		System.out.println("xmlBuilder :"+xmlBuilder.toString());
+		//Give to valid format to xml tags
+		ips = new ByteArrayInputStream(xmlBuilder.toString().getBytes("UTF-8"));
+		document = docBuilder.parse(ips);
+		//Updating the node value in XML request
+		updateXMLValue(document);
+		String updateXMlRequest = documentToString(document);
+		System.out.println("************ updateXMlRequest *************");
+		System.out.println(updateXMlRequest);
+		//Verify the request by using HttpClient
+		HttpClient httpClient = new HttpClient();
+		post.setRequestEntity(new StringRequestEntity(updateXMlRequest, "text/xml", "ISO-8859-1"));
+		post.setRequestHeader("Content-type", "text/xml");
+		int result = httpClient.executeMethod(post);
+		System.out.println("******* result :"+result);
+		if(result == 200){
+			System.out.println("*******************************");
+			System.out.println("Output Respone from XML request:");
+			System.out.println(post.getResponseBodyAsString());
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+	
+	
+	public static void checkRestRequest(){
+		
+		String strURL = "http://192.168.110.157:4021/IVRService.svc";
+	    String strXMLString = readExcel();
+	    
+	    PostMethod post = new PostMethod(strURL);
+	    try {
+	    	
+	    	post.setRequestEntity(new StringRequestEntity(strXMLString, "text/xml", "ISO-8859-1"));
+	    	post.addRequestHeader("SOAPAction", "http://tempuri.org/IServiceIVR/NewCardPayment");
+	    	post.setRequestHeader("Content-type","text/xml");
+	        HttpClient httpclient = new HttpClient();
+
+	        int result = httpclient.executeMethod(post);
+	        System.out.println("Response status code: " + result);
+	        System.out.println("Response body: ");
+	        System.out.println(post.getResponseBodyAsString());
+	    } catch (IOException e) {
+	        e.printStackTrace();
+	    } finally {
+	        post.releaseConnection();
+	    }
+		
+	}
+	
+	
+	public static void updateXMLValue(Document document){
+		try{
+			String name = "BundlePin";
+			String value = "77777777";
+			xpath = XPathFactory.newInstance().newXPath();
+			nodeList = (NodeList) xpath.compile("*//"+name).evaluate(document, XPathConstants.NODESET);
+			nodeList.item(0).setTextContent(value);
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+	
+	public static String documentToString(Document document){
+		
+		try{
+			transFactory = TransformerFactory.newInstance();
+			transformer = transFactory.newTransformer();
+			writer = new StringWriter();
+			transformer.transform(new DOMSource(document), new StreamResult(writer));
+			String opt = writer.getBuffer().toString();
+			System.out.println("documentToString Output :" +opt);
+			return opt;
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	
+	public static void ValidateXMLValues(){
+		
+		
+		
+	}
+	
+	public static void main(String[] args) {
+
+		
+		checkRestRequest();
+//		checkSOAPRequest();
+		
+		
+	}
+	
+}
