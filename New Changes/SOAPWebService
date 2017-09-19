@@ -1,0 +1,223 @@
+package com.test.adhoc;
+import java.io.ByteArrayInputStream;
+import java.io.StringWriter;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.methods.StringRequestEntity;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+import report.ExtentTestManager;
+
+
+public class SOAPWebService {
+	
+	public synchronized boolean Verify_XML_Response_Data(String soapURL, String Request_Name, String soapInputRequest, String soapOutputResponse,String excelDbQuery,int strExecEventFlag)throws Exception  {
+		boolean Executionstatus=false;
+		
+		String apiName = null;
+		String Input_DATAXML = null;
+		String XLDB_Input_Query = null;
+		String Output_DATAXML = null;
+		String serviceURL = null;
+		String gbstrXMLResponseData = null;
+		
+		String XML_Request = null;
+		int result=0;
+		
+		DocumentBuilderFactory factory = null;
+		Document document = null;
+		XPath xpath = null;
+		XPathFactory xpathfactory = null;
+		
+		if(strExecEventFlag==1){
+			serviceURL = "http://192.168.110.157:2277/Service.asmx";
+			apiName = "SubmitValueForBundleActivation";
+			Input_DATAXML= "BundlePin=dynamicValue;IMSI=100012345000060";
+			XLDB_Input_Query = "ErrorCode=0;ErrorMessage=Request accepted successfully";
+			
+		}
+		
+		if(apiName == null || serviceURL == null || Input_DATAXML == null){
+			return false;
+		}
+		
+		//Concatenate Service URl with API name
+		String concServiceURL = serviceURL+"?op="+apiName;
+		serviceURL = concServiceURL;
+		
+		try{
+			//Reading testdata from XMLTemplate
+			XML_Request = "";
+			
+			System.out.println("Retrieved Excel from Template:"+XML_Request);
+			factory=DocumentBuilderFactory.newInstance();
+			DocumentBuilder builder=factory.newDocumentBuilder();
+			StringBuilder xmlBuilder=new StringBuilder();
+			xmlBuilder.append(XML_Request);
+			System.out.println("xmlBuilder::"+xmlBuilder.toString());
+			ByteArrayInputStream  is;
+			try{
+				is=new ByteArrayInputStream(xmlBuilder.toString().getBytes("UTF-8"));
+				document=builder.parse(is);
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+			//updating node values from XMLtemplate based on input data from testdata sheet
+			System.out.println("Input_DATAXML:"+Input_DATAXML);
+			updateNodeValue(document,Input_DATAXML);
+			String Updated_XML_Request = DocumentToString(document);
+
+			try{
+				System.out.println("Before post method");
+				PostMethod post = new PostMethod(serviceURL);
+				System.out.println("Updated_XML_Request:"+Updated_XML_Request);
+				
+				HttpClient httpclient = new HttpClient();
+				System.out.println("httpclient::"+Updated_XML_Request);
+		    	post.setRequestEntity(new StringRequestEntity(Updated_XML_Request, "text/xml", "ISO-8859-1"));
+		    	post.setRequestHeader("Content-type","text/xml");
+				try{
+					result = httpclient.executeMethod(post);
+					System.out.println("result::"+result);
+
+					ExtentTestManager.reportStepPass("UPDATED XML REQUEST : '"+ Updated_XML_Request + "' has been sent successfully.");
+				}catch(Exception httpException){
+					System.out.println("Exception::"+httpException.getMessage());
+
+					httpException.printStackTrace();
+				}
+				
+				gbstrXMLResponseData= post.getResponseBodyAsString();
+				System.out.println("Response:"+gbstrXMLResponseData);
+				//To Enable SOAP XML Header Validations
+				System.out.println("Result:"+result);
+				if(result==200){
+					Executionstatus=true;
+					ExtentTestManager.reportStepPass("XML RESPONSE : '"+ gbstrXMLResponseData.toString() + "' received successfully.");
+					//validating XML headers and footers
+
+					try{
+						xpathfactory = XPathFactory.newInstance();
+						System.out.println("xpathfactory :"+xpathfactory);
+						xpath = XPathFactory.newInstance().newXPath();
+						factory=DocumentBuilderFactory.newInstance();
+						builder=factory.newDocumentBuilder();
+						document=builder.parse(new ByteArrayInputStream(gbstrXMLResponseData.getBytes("UTF-8")));
+
+						String[] Output_data = Output_DATAXML.split(";");
+
+						for (int i = 0; i < Output_data.length; i++) {
+							String[] Output_XML_Info = Output_data[i].split("=",2);
+						String node_value=(String)xpath.compile("*//"+Output_XML_Info[0]).evaluate(document,XPathConstants.STRING);
+
+							Executionstatus = StringValidator(node_value,Output_XML_Info[1]);
+							
+							if(Executionstatus==true){
+								ExtentTestManager.reportStepPass("The actual node value of  : '//"+ Output_XML_Info[0] + "' is '"+ node_value +"' and matched with the expected value '"+ Output_XML_Info[1] +"'.");
+								Executionstatus=true;;
+							} else{
+								Executionstatus=false;
+							}
+						}
+					}catch(Exception responseXMLException){
+						responseXMLException.printStackTrace();
+						return Executionstatus;
+					}
+				}
+			}catch(Exception xmlFormException){
+				xmlFormException.printStackTrace();
+				System.out.println(xmlFormException.getMessage());
+			}
+		}catch(Exception e){
+			return Executionstatus;
+		}
+		return Executionstatus;
+	}
+	
+	
+	
+	public static void updateNodeValue(Document document, String Inputdata) throws Exception {
+		XPath xpath=null;
+		
+		try{
+		xpath = XPathFactory.newInstance().newXPath();
+		NodeList nodes =null;
+		String[] Input_data = Inputdata.split(";");
+
+		for (int i = 0; i < Input_data.length; i++) {
+			String[] XML_Info = Input_data[i].split("=");
+			nodes=(NodeList)xpath.compile("*//"+XML_Info[0]).evaluate(document,XPathConstants.NODESET);
+			nodes.item(0).setTextContent(XML_Info[1]);
+				}
+		}catch(Exception e){
+			e.printStackTrace();
+			}
+		}
+	
+	public static String DocumentToString(Document doc){
+		try{
+			System.out.println("DocumentToString");
+				TransformerFactory tf = TransformerFactory.newInstance();
+				Transformer transformer = tf.newTransformer();
+				StringWriter writer = new StringWriter();
+				transformer.transform(new DOMSource(doc), new StreamResult(writer));
+				String output = writer.getBuffer().toString();
+				System.out.println("output:"+output);
+				return output;
+		}catch(Exception e ){
+			System.out.println(e.getMessage());
+			return "Error occured:";
+		}
+			}
+	
+	public static boolean RegExpValidator(String ActualValue,String ExpectedValue){
+		boolean Executionstatus=false;
+		
+		try{
+		
+		Pattern regPatter=Pattern.compile(ExpectedValue.trim());
+		Matcher matches = regPatter.matcher(ActualValue.trim());
+		boolean statusMatch=matches.find();
+		if (statusMatch) {
+			Executionstatus=true;
+			return statusMatch;
+		}
+		else{
+			Executionstatus=false;
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		return Executionstatus;
+	}
+	
+	public static boolean StringValidator(String ActualValue,String ExpectedValue){
+		boolean Executionstatus=false;
+		
+		try{
+		boolean statusMatch=ActualValue.contentEquals(ExpectedValue);
+		if (statusMatch) {
+			Executionstatus=true;
+			return statusMatch;
+		}
+		else{
+			Executionstatus=false;
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		return Executionstatus;
+	}
+
+}
