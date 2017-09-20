@@ -1,0 +1,11 @@
+//span[text()='Category']/span
+
+(//span[text()='Clothing & Accessories'])[1]
+(//span[text()='Clothing & Accessories'])[2]/following::div/a[2]/span
+
+
+//div[@id='nav-flyout-shopAll']/div[2]/span[6]/span
+
+//span[text()='Clothing']
+
+Men's Fashion
