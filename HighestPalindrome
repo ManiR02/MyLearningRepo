@@ -1,0 +1,17 @@
+Class HighestPalindrome
+{
+public static void main(String args[])
+{
+String s1 = "GO2Group is in Chennai";
+String[] words = s1.split("\\s");
+for(String w : words){
+StringBuffer buff = new StringBuffer(w);
+String revWord = buff.reverse();
+System.out.println("Word value: "+w+" Reverse of that word: "+revWord);
+if (w.equalsIgnoreCase(revWord)){
+int i=w.length();
+System.out.println(i);
+}
+}
+}
+}
