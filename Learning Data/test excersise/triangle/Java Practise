@@ -1,0 +1,328 @@
+package testcases;
+import java.util.Arrays;
+import org.apache.commons.lang3.ArrayUtils;
+class DuplicateInterArray{
+	public static void main(String args[]){
+		int[] a= {9,2,6,4,7,8,2};
+		int[] output = null;
+		//int count = a.size();
+		for (int i=0;i<7;i++){
+			//System.out.print(a[i]);
+			for (int j =0;j<7;j++)
+			{
+				if (i!=j)
+				{
+					if (a[i]==a[j]){
+						 output = ArrayUtils.remove(a, i);
+					}
+				}
+			}
+		}
+		System.out.println("Final Array List is : "+Arrays.toString(output));
+		
+	}
+}
+
+
+=====================
+class ArmStrong
+{
+public static void main(String args[])
+{
+int i,j,n;
+String number ="353";
+char a;
+n=number.length();
+for(i=0;i<n;i++)
+{
+a=number.charAt(i);
+//System.out.println(a);
+j = a - '0';
+j=j*j*j;
+System.out.println(j);
+}
+}
+}
+
+
+==========================
+import java.awt.geom.*;
+import java.util.Scanner;  
+public class elevator
+{
+
+    static int floor;
+	
+    public static void main(String args[])
+    {
+
+        floor = (int) (Math.random() * 10 + 1);
+			
+        System.out.println("The elevator is now on floor " +floor);
+        System.out.print("Which floor are you at now (0-10) where 0 = basement: ");
+		Scanner sc=new Scanner(System.in); 
+		int current_floor = sc.nextInt();
+
+        if(floor == current_floor)
+        {
+            System.out.println("Enter into the elevator");
+        }
+        else
+        {
+            MoveElevator(current_floor);
+        }
+
+
+        System.out.println("To which floor would you want to go (0-10) where 0 = basement");
+        int target_floor = sc.nextInt();
+
+        MoveElevator(target_floor);
+    }
+
+    public static void MoveElevator(int target_floor)
+    {
+        int direction;
+        if( target_floor > floor )
+        {
+            System.out.println("The elevator is on it's way up...");
+            direction = 1;
+        }else{
+            System.out.println("The elevator is on it's way down...");
+            direction = -1;
+        }
+
+        while(target_floor != floor)
+        {
+            floor += direction;
+            System.out.println(floor);
+        }
+
+        System.out.println("The elevator has arrived");
+    }
+}
+============================
+import java.util.Arrays;
+import java.util.Scanner;
+
+public class first_repeat_char {
+
+	public static void main(String[] args) {
+		int k=1;
+		//Scanner class to get input from user of various datatypes, str is connected to i/p stream and connected to keyboard 
+		Scanner scan = new Scanner(System.in);
+		System.out.println("Enter String: ");
+
+		//nextLine()returns space after string
+		String str = scan.nextLine().toLowerCase().replaceAll("\\s+", "");
+		
+		System.out.println("converted string is: " +str);
+
+		//converted string to array
+		char[] text=str.toCharArray();
+		
+		//sorting array
+		//Arrays.sort(text);
+		//System.out.println("Array is: " +(Arrays.toString(text)));
+	
+
+		int len = str.length();
+		for (int i =0; i<len;i++){
+		char c=text[i];
+		for (int j=0;j<len;j++){
+		if (i!=j){
+		if(text[i]==(text[j]))
+		{
+		k++;
+		if(k==2)
+		{System.out.println("First repeating element is: "+c);}
+		break;
+		}
+		}
+		}
+		}
+		
+
+		//declaring stlen to get string length
+		//System.out.println("First repeating element is: ");
+/*
+		for(int i = 1; i < len; i++) {
+			if(text[i] == text[i - 1]) {
+                System.out.print(text[i]+" ");
+                break;                
+			}
+		}*/
+	}
+}
+
+====================================
+public class Foo {
+    static {
+		String text="Billa";
+         System.out.println("Hello World\n");
+		 System.out.println(text);
+         //System.exit(0);
+    } 
+	public static void main (String args[]){
+	System.out.println("Hello");
+	}
+}
+
+========================
+public class simple{
+public static void main(String []args){
+System.out.println("Hello");
+}
+}
+====================
+there are 100 links . click 5th first time and 
+6th second time....
+
+package practiseLab;
+
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.testng.annotations.Test;
+
+public class ClickWebtable 
+
+{
+
+ @Test
+ 
+ public void webtable()
+ 
+ {
+
+	 System.setProperty("webdriver.chrome.driver", "./drivers/Chromedriver.exe");
+	 ChromeDriver driver=new ChromeDriver();
+	 driver.manage().timeouts().implicitlyWait(30, TimeUnit.SECONDS);
+	 driver.get("http://toolsqa.com/");
+	 String data= driver.getTitle();
+	 System.out.println(data);	
+	 List<WebElement> element=driver.findElementsByTagName("a");
+	 int cnt=element.size();
+	 for(int i=4;i<=5;i++)
+		 
+	 {
+		 element.get(i).click();
+		 System.out.println(element.get(i).getText());
+	  	 	 
+	 }
+	 
+	 System.out.println("cnt is :" +cnt);
+	 
+	 
+ }
+
+
+}
+====================================================
+class Oddpattern{
+public static void main(String args[]){
+int i,j,n=100;
+for(i=1;i<=n;i=i+2){
+for (j=1;j<i;j=j+2){
+System.out.print(j+"");}
+System.out.println("");
+}
+}
+}
+===============================
+class Rectangle
+{
+
+void getData(){
+int len;
+int wid;
+Scanner inputVal =  new Scanner(System.in);
+System.out.prtintl("Enter the length of Rectangle "+)
+len=inputVal.nextInt();
+System.out.prtintl("Enter the width of Rectangle "+)
+wid=inputVal.nextInt();
+}
+
+public Rectangle(int a, int b)
+{
+int area = a*b; 
+}
+
+
+
+int area(int length, int width)
+{
+int areaofRect;
+areaofRect=length * width;
+return areaofRect
+}
+
+
+
+
+
+public static void main (Sring args[]){
+int length =100;
+int width =200;
+Rectangle obj1 = new Rectangle(length,breath);
+
+}
+
+
+==========================
+import java.util.Scanner;
+class ReverseString{
+public static void main(String args[]){
+String text;
+int len,i;
+System.out.println("Enter the String value : ");
+Scanner inputVal = new Scanner(System.in);
+text = inputVal.nextLine();
+len=text.length();
+System.out.println("Entered String value :" + text);
+System.out.println("Entered String length :" + len);
+for (i=len-1;i>-1;i--){
+System.out.print(text.charAt(i));
+}
+
+}
+}
+==============================
+class simple{
+public static void main(String []args){
+//int[] myList={"1","2","3"};
+int[] myList={5,6,7};
+//int myList[][]={4,9,7,0};
+int myList[] = {4,3,7};
+for (int i=0;i<myList.length;i++){
+System.out.println(myList[i]);}
+}
+}
+
+
+====================
+class Simple1
+{
+public void main (String data[])
+{
+data[] = {"Mani","Vaidy","Kiran","Hari"};
+for (int i=0; i>data.length; i++)
+{
+System.out.println("The Argument "+i+" value is :"+data[i]);
+}
+}
+}
+================================
+class TestPattern{
+public static void main(String args[]){
+int n=5;
+for (int i = 1; i <= n; i++) {
+      for (int j = 1; j <=i ; j++) {
+	System.out.print("\t"+"*");	
+       }
+ System.out.println();
+}
+}
+}
+===========================
