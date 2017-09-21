@@ -1,0 +1,95 @@
+package com.test.pkg;
+
+import java.util.HashMap;
+
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.remote.CapabilityType;
+import org.openqa.selenium.remote.DesiredCapabilities;
+
+public class DownloadChromeFile {
+    public static void main(String[] args) {
+    System.setProperty("webdriver.chrome.driver","./drivers/chromedriver.exe");
+    String downloadFilepath = "D:\\APPS BACKUP";
+
+    HashMap<String, Object> chromePrefs = new HashMap<String, Object>();
+    chromePrefs.put("profile.default_content_settings.popups", 0);
+    chromePrefs.put("download.default_directory", downloadFilepath);
+    ChromeOptions options = new ChromeOptions();
+    HashMap<String, Object> chromeOptionsMap = new HashMap<String, Object>();
+    /*options.setExperimentalOption("prefs", chromePrefs);
+    options.addArguments("--test-type");
+    options.addArguments("--disable-extensions"); //to disable browser extension popup
+*/
+    DesiredCapabilities cap = DesiredCapabilities.chrome();
+    cap.setCapability(ChromeOptions.CAPABILITY, chromeOptionsMap);
+    cap.setCapability(CapabilityType.ACCEPT_SSL_CERTS, true);
+    cap.setCapability(ChromeOptions.CAPABILITY, options);
+    ChromeDriver  driver = new ChromeDriver(cap);  
+             driver.get("http://www.seleniumhq.org/download/");
+             driver.findElementByLinkText("32 bit Windows IE").click();
+             
+             
+             
+           /*//common to all the cases
+             FirefoxProfile prof = new FirefoxProfile();
+
+             //Case:1 - Use this case to set download this code to your browser's default location
+             //prof.setPreference("browser.helperApps.neverAsk.saveToDisk", "application/zip");
+
+             //Case:2 - Download file to Desktop
+             //prof.setPreference("browser.download.folderList", 0);
+             //prof.setPreference("browser.helperApps.neverAsk.saveToDisk", "application/zip");
+
+             //Case:3 - Download to custom folder path. Replace d:\\selenium with your Download Location 
+             prof.setPreference("browser.download.dir","D:\\selenium\\");
+             prof.setPreference("browser.download.folderList", 2);
+             prof.setPreference("browser.helperApps.neverAsk.saveToDisk", "application/zip");
+
+             //This will work for all cases mentioned above
+             WebDriver driver = new FirefoxDriver(prof);
+             driver.get("http://docs.seleniumhq.org/download/");
+             driver.findElement(By.xpath("//tr[1]/td[4]/a[text()='Download']")).click();*/
+     }
+} 
+-------------------------------------------------------------
+package com.test.pkg;
+
+import java.io.IOException;
+
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpException;
+import org.apache.commons.httpclient.methods.PostMethod;
+
+public class SOAP {
+	
+	
+	public static void main(String[] args) {
+	
+		String strurl="http://192.168.151.142:6520/ALLOCATE_LERGD_MSISDN/";
+		String strXmlString="<ENVELOPE><HEADER><TRANSACTION_ID>eqhcCSnY2806174414</TRANSACTION_ID><ENTITY>ITGSIM:1:IMGAUTO</ENTITY><CHANNEL_REFERENCE>CCARE</CHANNEL_REFERENCE></HEADER><BODY><ALLOCATE_LERGD_MSISDN_REQUEST><IMSI>205668811001094</IMSI><ALLOCATION_TYPE>B</ALLOCATION_TYPE><ZIP_CODE>14586</ZIP_CODE><CHANNEL_ID>IVR</CHANNEL_ID></ALLOCATE_LERGD_MSISDN_REQUEST></BODY></ENVELOPE>";
+		PostMethod post=new PostMethod(strurl);
+		
+			try {
+				post.setRequestBody(strXmlString);
+				post.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+				HttpClient httpclient=new HttpClient();
+				 int result=httpclient.executeMethod(post);
+				  System.out.println("Response status code: " + result);
+				    System.out.println("Response body: ");
+				 System.out.println(post.getRequestBodyAsString());
+			} catch (HttpException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}finally {
+		        post.releaseConnection();
+		    }
+		}
+}
+			
+		
+	
+
