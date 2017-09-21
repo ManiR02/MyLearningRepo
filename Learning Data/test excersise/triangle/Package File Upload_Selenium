@@ -1,0 +1,898 @@
+Package File Upload
+*******************
+
+
+
+package fileupload;
+
+public class BlackList {
+
+}
+
+-----------------------------------------------------------
+package fileupload;
+
+import java.util.concurrent.TimeUnit;
+
+import org.openqa.selenium.Keys;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.interactions.Actions;
+
+public class ContextClick {
+	public static void main(String[] args) throws InterruptedException {
+		System.setProperty("webdriver.chrome.driver", "./drivers/chromedriver.exe");
+		ChromeDriver driver=new ChromeDriver();
+		driver.get("http://www.ufthelp.com/2014/11/working-with-action-class-in-selenium.html");
+		driver.manage().window().maximize();
+		driver.manage().timeouts().implicitlyWait(5000, TimeUnit.SECONDS);
+		WebElement link=driver.findElementByXPath("//a[@href='http://www.ufthelp.com/2014/11/close-vs-quit-in-selenium.html']");
+		Actions oaction=new Actions(driver);
+		oaction.contextClick(link).sendKeys(Keys.DOWN).sendKeys(Keys.DOWN).sendKeys(Keys.ENTER).build().perform();
+		Thread.sleep(5000);
+		oaction.keyDown(Keys.CONTROL).sendKeys(Keys.F5).perform(); //refresh
+		driver.quit();
+		
+	}
+}
+
+-----------------------------------------------------------
+package fileupload;
+
+import java.io.*;
+import org.apache.poi.xssf.usermodel.*;
+
+public class Createfile {
+	public static void main(String[] args)throws Exception 
+	   {
+	      //Create Blank workbook
+	      XSSFWorkbook workbook = new XSSFWorkbook(); 
+	      //Create file system using specific name
+	      FileOutputStream out = new FileOutputStream(
+	      new File("D:\\createworkbook1.xlsx"));
+	      //write operation workbook using file out object 
+	      workbook.write(out);
+	      out.close();
+	      System.out.println("createworkbook.xlsx written successfully");
+	   }
+}
+----------------------------------------------------------------------
+package fileupload;
+
+import java.util.concurrent.TimeUnit;
+
+import org.openqa.selenium.Dimension;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.chrome.ChromeDriver;
+
+public class DimensionInGoogle {
+
+	public static void main(String[] args) {
+		System.setProperty("webdriver.chrome.driver", "./drivers/chromedriver.exe");		
+		ChromeDriver driver=new ChromeDriver();
+		driver.manage().window().maximize();
+		driver.manage().timeouts().implicitlyWait(5000, TimeUnit.SECONDS);
+		System.out.println(driver.manage().window().getSize());
+		Dimension d=new Dimension(420,600);
+		driver.manage().window().setSize(d);
+		
+
+	}
+
+}
+---------------------------------------------------------------
+package fileupload;
+
+import java.awt.AWTException;
+import java.awt.Robot;
+import java.awt.event.KeyEvent;
+import java.util.concurrent.TimeUnit;
+
+import org.openqa.selenium.chrome.ChromeDriver;
+
+public class FileDownloadUsingrobot {
+
+	public static void main(String[] args) throws AWTException, InterruptedException {
+		System.setProperty("webdriver.chrome.driver", "./drivers/chromedriver.exe");		
+		ChromeDriver driver=new ChromeDriver();
+		driver.manage().window().maximize();
+		driver.manage().timeouts().implicitlyWait(5000, TimeUnit.SECONDS);
+		driver.get("http://spreadsheetpage.com/index.php/file/C35/P10/");
+		driver.findElementByXPath("//a[contains(text(),'calendar.xls')]").click();
+		Robot robot=new Robot();
+		Thread.sleep(5000);
+		robot.keyPress(KeyEvent.VK_DOWN);
+		Thread.sleep(2000);
+		robot.keyPress(KeyEvent.VK_TAB);	
+        Thread.sleep(2000);	
+
+	}
+
+}
+-----------------------------------------------------------------
+package fileupload;
+
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+
+public class GoogleLinks {
+
+	public static void main(String[] args) {
+		System.setProperty("webdriver.chrome.driver", "./drivers/chromedriver.exe");		
+		ChromeDriver driver=new ChromeDriver();
+		driver.manage().window().maximize();
+		driver.manage().timeouts().implicitlyWait(5000, TimeUnit.SECONDS);
+		driver.get("https://www.google.co.in");
+		List<WebElement> totalLinks=driver.findElementsByTagName("a");
+		System.out.println(totalLinks.size());
+		int k = totalLinks.size();
+		System.out.println("List of links Available: ");
+		
+		for (int i=0;i<k;i++)
+		{
+			//if (totalLinks.get(i).getAttribute("href").contains("google"))
+			//{
+				String link = totalLinks.get(i).getAttribute("href");
+				System.out.println(link);
+			//}
+		}
+		driver.close();
+	}
+
+}
+----------------------------------------------------
+package fileupload;
+
+import java.util.List;
+
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+
+public class HandlingWebtable {
+
+	public static void main(String[] args) {
+		System.setProperty("webdriver.chrome.driver", "./drivers/chromedriver.exe");
+		ChromeDriver driver=new ChromeDriver();
+		driver.get("http://toolsqa.com/automation-practice-table/");
+		driver.manage().window().maximize();
+		//To locate table.
+		WebElement webtable=driver.findElementByXPath("//div[@id='content']/table/tbody");
+		
+		//To locate rows of table.
+		List<WebElement> rowtable=	webtable.findElements(By.tagName("tr"));
+		
+		//To locate no of rows
+		int row_count=rowtable.size();
+		
+		//Loop will execute for all the rows of the table
+		
+		for (int row =0;row <row_count;row++)
+		{
+			//To locate columns(cells) of that specific row.
+			List<WebElement> column_row=	rowtable.get(row).findElements(By.tagName("td"));
+			
+			//To calculate no of columns(cells) In that specific row
+			int column_count=    column_row.size();
+			
+			System.out.println("Number of cells In Row " + row + " are " + column_count);
+			
+			//Loop will execute till the last cell of that specific row
+			for (int column = 0; column < column_count; column++) {
+			    //To retrieve text from the cells.
+			    String celltext = column_row.get(column).getText();
+			    System.out.println("Cell Value Of row number " + row + " and column number " + column + " Is " + celltext);
+		}
+		}
+		driver.close();
+	}
+}
+		
+		
+			
+
+--------------------------------------------------------------------
+package fileupload;
+
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+import org.openqa.selenium.chrome.ChromeDriver;
+
+public class ImageClick {
+
+	public static void main(String[] args) throws InterruptedException {
+		System.setProperty("webdriver.chrome.driver", "./drivers/chromedriver.exe");		
+		ChromeDriver driver=new ChromeDriver();
+		driver.manage().window().maximize();
+		driver.manage().timeouts().implicitlyWait(5000, TimeUnit.SECONDS);
+		driver.get("http://intranet.plintron.com/home.asp");
+		driver.findElementByXPath("//img[@title='PLINTRON TELECOM SOLUTION PROVIDERS 2016']").click();
+		
+		 Set<String> totalwind=driver.getWindowHandles();
+		 System.out.println(totalwind.size());
+		 
+		 for (String wHandle : totalwind) {
+				driver.switchTo().window(wHandle);
+				Thread.sleep(5000);
+		
+		 }
+				System.out.println(driver.getTitle());
+				if(driver.getTitle().equals("Plintron - Mobility Simplified"))
+				{
+					System.out.println("we are in Plintron - Mobility Simplified page");
+				}else
+				{
+					System.out.println("Not navigated to Plintron - Mobility Simplified page");
+				}		
+		
+				
+		driver.quit();
+
+	}
+
+}
+-----------------------------------------------------------------------------------------------------------------
+package fileupload;
+
+import java.util.concurrent.TimeUnit;
+
+import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.interactions.Actions;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
+
+public class Keys_Chord {
+ 
+ public WebDriver driver;
+
+ @Test
+ public void testKeys_Chord() throws Exception {
+	 
+	 driver.get("https://accounts.google.com/signup");
+  //Element definitions for FirstName and LastName
+  WebElement txtFName=driver.findElement(By.name("FirstName"));
+  WebElement txtLName=driver.findElement(By.name("LastName"));
+  //Type "webdriver" in First Name
+  txtFName.sendKeys("webdriver");
+  //Create an object for Actions Class
+  Actions a = new Actions(driver);
+  //select the value which is typed in FirstName field
+  a.sendKeys(txtFName, Keys.chord(Keys.CONTROL,"a")).perform();
+  Thread.sleep(8000);
+  //Performing copy action using CTRl+C
+  a.sendKeys(Keys.chord(Keys.CONTROL,"c")).perform();
+  Thread.sleep(8000);
+  //Performing paste action using CTRL+V in LastName field
+  a.sendKeys(txtLName, Keys.chord(Keys.CONTROL,"v")).perform();
+  Thread.sleep(2000);
+ }
+
+ @BeforeClass
+ public void beforeClass() 
+ {
+	 System.setProperty("webdriver.chrome.driver", "./drivers/chromedriver.exe");
+	 driver =new ChromeDriver();
+  driver.manage().window().maximize();
+  driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+  
+ }
+
+ @AfterClass
+ public void afterClass() throws Exception 
+ {
+  driver.quit();
+ }
+}
+---------------------------------------------------------------------------------------------------
+package fileupload;
+
+import java.util.Properties;
+
+public class PropertyClass {
+
+	public static void main(String[] args) {
+		Properties prop=new Properties();
+		
+
+	}
+
+}
+-----------------------------------------------------
+package fileupload;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+public class ReadingExcel {
+
+	@SuppressWarnings("resource")
+	public static void main(String[] args) throws IOException {
+		 try 
+		 {
+		FileInputStream fis =new FileInputStream(new File("D:\\Book1.xlsx"));
+		
+		XSSFWorkbook workbook=new XSSFWorkbook(fis);
+		XSSFSheet sheet =workbook.getSheetAt(0);
+		
+		System.out.println(sheet.getRow(0).getCell(0).getStringCellValue());
+		System.out.println(sheet.getRow(0).getCell(1).getStringCellValue());
+		System.out.println(sheet.getRow(1).getCell(0).getStringCellValue());
+		System.out.println(sheet.getRow(1).getCell(1).getStringCellValue());
+		 }
+		 catch (Exception e) {
+			 
+			   System.out.println(e.getMessage());
+
+	}
+	}
+
+}
+-----------------------------------------------------------
+package fileupload;
+
+import java.util.Iterator;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+import org.openqa.selenium.chrome.ChromeDriver;
+
+public class redif {
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		System.setProperty("webdriver.chrome.driver", "./drivers/chromedriver.exe");
+		ChromeDriver driver=new ChromeDriver();
+		driver.get("http://www.rediff.com/");
+		driver.manage().window().maximize();
+		driver.manage().timeouts().implicitlyWait(5000, TimeUnit.SECONDS);
+		Set totalwin=driver.getWindowHandles();
+		System.out.println(totalwin.size());
+		//driver.quit();
+		Iterator it=totalwin.iterator();
+		String mainwin=(String) it.next();
+		String popup=(String) it.next();
+		
+		driver.switchTo().window(popup).close();
+		driver.switchTo().window(mainwin);
+		driver.quit();
+		
+	}
+
+}
+----------------------------------------------------------
+package fileupload;
+
+import java.util.concurrent.TimeUnit;
+
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.support.ui.Select;
+
+public class sample {
+
+	public static void main(String[] args) throws InterruptedException {
+
+		System.setProperty("webdriver.chrome.driver", "./drivers/chromedriver.exe");
+		ChromeDriver driver =new ChromeDriver();
+		driver.get("http://192.168.110.151:4040/2.0.20.0_Rev_0/ContentPage/HlrLogin.aspx");
+		driver.manage().window().maximize();
+		driver.manage().timeouts().implicitlyWait(10000, TimeUnit.MILLISECONDS);
+		driver.findElementByXPath("//input[@id='ctl00_cphLogin_txtName']").sendKeys("BLU2");
+		driver.findElementByXPath("//input[@id='ctl00_cphLogin_txtPassword']").sendKeys("BLU2");
+		WebElement country = driver.findElementByXPath("//select[@id='ctl00_cphLogin_drpCountry']");
+				Select countryname = new Select(country);
+				countryname.selectByVisibleText("HLRHSS@STLOADB");
+		Thread.sleep(1000);
+		WebElement network = driver.findElementByXPath("//select[@id='ctl00_cphLogin_ddlNetwork']");
+				Select networkname = new Select(network);
+				networkname.selectByVisibleText("BLUCHER");
+		driver.findElementByXPath("//input[@id='ctl00_cphLogin_btnLogin']").click();
+		Actions actions = new Actions(driver);
+		WebElement mainMenu = driver.findElementByXPath("//div[@id='ctl00_hlrMenuCtrl_menuUser']/div/ul/li[7]/span");
+		actions.moveToElement(mainMenu).click().build().perform();
+		WebElement blacklistmenu = driver.findElementByXPath("//a[@href='../SubscriberManagement/BlackList.aspx']");
+		actions.moveToElement(blacklistmenu).click().build().perform();
+	}
+
+}
+-------------------------------------------------------
+package fileupload;
+
+import java.util.concurrent.TimeUnit;
+
+import org.openqa.selenium.Dimension;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.chrome.ChromeDriver;
+
+public class ScrollDown {
+
+	public static void main(String[] args) {
+		System.setProperty("webdriver.chrome.driver", "./drivers/chromedriver.exe");		
+		ChromeDriver driver=new ChromeDriver();
+		driver.manage().window().maximize();
+		driver.manage().timeouts().implicitlyWait(5000, TimeUnit.SECONDS);
+		driver.get("https://forums.xamarin.com/discussion/65017/scrolldown-up-functionality");
+		JavascriptExecutor js = (JavascriptExecutor)driver;
+		js.executeScript("window.scrollBy(0,500)");
+	}
+
+}
+---------------------------------------------------------
+package fileupload;
+
+import java.awt.AWTException;
+import java.awt.Rectangle;
+import java.awt.Robot;
+import java.awt.Toolkit;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+
+import javax.imageio.ImageIO;
+
+import org.apache.commons.io.FileUtils;
+import org.openqa.selenium.Alert;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
+import org.openqa.selenium.chrome.ChromeDriver;
+
+public class Taking_Snap_Alert {
+	public static void main(String[] args) 
+	{
+	System.setProperty("webdriver.chrome.driver", "./drivers/chromedriver.exe");		
+	ChromeDriver driver=new ChromeDriver();
+	driver.manage().window().maximize();
+	driver.manage().timeouts().implicitlyWait(5000, TimeUnit.SECONDS);
+	driver.get("http://spreadsheetpage.com/index.php/file/C35/P10/");
+
+	Alert alert = null;
+
+    try {
+        File scrFile = ((TakesScreenshot)driver).getScreenshotAs(OutputType.FILE);
+        FileUtils.copyFile(scrFile, new File("screenshot.png"));
+    } catch (Exception e) {
+        alert = driver.switchTo().alert();
+        if(e.getMessage().contains("unexpected alert open:")){
+            //before taking screenshot, you may wait for some moment to be properly visible
+            try {
+                 BufferedImage screencapture = new Robot().createScreenCapture(new Rectangle(Toolkit.getDefaultToolkit().getScreenSize()));
+                 File file = new File("screenshot.jpg");
+                     ImageIO.write(screencapture, "png", file);
+            } catch (AWTException e1) {
+                e1.printStackTrace();
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
+        }
+    }
+
+    alert.accept();
+
+}
+}
+----------------------------------------------------
+package fileupload;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+
+import org.testng.annotations.Test;
+
+public class TextFile {
+
+	@Test
+	public void propfile() throws IOException
+	{
+		
+		File f=new File("D:\\temp.txt");
+		
+		f.createNewFile();
+		
+		FileWriter w =new FileWriter("D:\\temp.txt");
+		BufferedWriter out=new BufferedWriter(w);
+		out.write("hello das");
+		out.newLine();
+		out.write("hello man");
+		out.flush();
+		
+		/*FileReader r=new FileReader("D:\\temp.txt");
+		BufferedReader br=new BufferedReader(r);
+		
+		String x="";
+		while(x=br.readLine())!=null)
+		{
+			System.out.println(x);
+		}*/
+		
+	}
+}
+------------------------------------------------------------
+package fileupload;
+
+import java.awt.Robot;
+import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
+import java.awt.event.KeyEvent;
+import java.util.concurrent.TimeUnit;
+
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.support.ui.Select;
+import org.testng.annotations.Test;
+
+
+
+public class UploadFileRobot 
+{
+	//String URL = "http://192.168.110.151:4040/2.0.20.0_Rev_0/ContentPage/HlrLogin.aspx";
+	//@Test
+	/*public void testUpload()*/ public static void main(String[] args) throws InterruptedException
+	{
+		System.setProperty("webdriver.chrome.driver", "./drivers/chromedriver.exe");
+		ChromeDriver driver =new ChromeDriver();
+		driver.get("http://192.168.110.151:4040/2.0.20.0_Rev_0/ContentPage/HlrLogin.aspx");
+		driver.manage().window().maximize();
+		driver.manage().timeouts().implicitlyWait(10000, TimeUnit.MILLISECONDS);
+		driver.findElementByXPath("//input[@id='ctl00_cphLogin_txtName']").sendKeys("BLU2");
+		driver.findElementByXPath("//input[@id='ctl00_cphLogin_txtPassword']").sendKeys("BLU2");
+		WebElement country = driver.findElementByXPath("//select[@id='ctl00_cphLogin_drpCountry']");
+				Select countryname = new Select(country);
+				countryname.selectByVisibleText("HLRHSS@STLOADB");
+		Thread.sleep(1000);
+		WebElement network = driver.findElementByXPath("//select[@id='ctl00_cphLogin_ddlNetwork']");
+				Select networkname = new Select(network);
+				networkname.selectByVisibleText("BLUCHER");
+		driver.findElementByXPath("//input[@id='ctl00_cphLogin_btnLogin']").click();
+		Actions actions = new Actions(driver);
+		WebElement mainMenu = driver.findElementByXPath("//div[@id='ctl00_hlrMenuCtrl_menuUser']/div/ul/li[7]/span");
+		actions.moveToElement(mainMenu).click().build().perform();
+		WebElement blacklistmenu = driver.findElementByXPath("//a[@href='../SubscriberManagement/BlackList.aspx']");
+		actions.moveToElement(blacklistmenu).click().build().perform();
+		driver.findElementByXPath("//input[@onclick='EnableBulk();']").click();
+		driver.findElementByXPath("//input[@value='rdoIMSI']").click();
+		WebElement registration= driver.findElementByXPath("//select[@id='ctl00_cphContent_ddlBulkFlag']");
+		Select registrationflag = new Select(registration);
+		registrationflag.selectByVisibleText("Black Listed");
+		//driver.findElementByXPath("//input[@type='file']").click();	
+		driver.findElementByXPath("//input[@type='file']").click();
+		//sendKeys("D://ST-RELEASE/SPA/SPA_LOAD_DATA/Data/Load/Load2-PREBURNT/Delete_file/IMSI1.txt");
+		uploadFile("D:\\ST-RELEASE\\SPA\\SPA_LOAD_DATA\\Data\\Load\\Load2-PREBURNT\\Delete_file\\IMSI1.txt");
+		Thread.sleep(2000);
+		
+	}
+	
+	/**
+     * This method will set any parameter string to the system's clipboard.
+     */
+	public static void setClipboardData(String string) {
+		//StringSelection is a class that can be used for copy and paste operations.
+		   StringSelection stringSelection = new StringSelection(string);
+		   Toolkit.getDefaultToolkit().getSystemClipboard().setContents(stringSelection, null);
+		}
+	
+	public static void uploadFile(String fileLocation) {
+        try {
+        	//Setting clip board with file location
+            setClipboardData(fileLocation);
+            //native key strokes for CTRL, V and ENTER keys
+            Robot robot = new Robot();
+	
+            robot.keyPress(KeyEvent.VK_CONTROL);
+            Thread.sleep(5000);
+            robot.keyPress(KeyEvent.VK_V);
+            Thread.sleep(5000);
+            robot.keyRelease(KeyEvent.VK_V);
+            Thread.sleep(5000);
+            robot.keyRelease(KeyEvent.VK_CONTROL);
+            Thread.sleep(5000);
+            robot.keyPress(KeyEvent.VK_ENTER);
+            Thread.sleep(5000);
+            robot.keyRelease(KeyEvent.VK_ENTER);
+        } catch (Exception exp) {
+        	exp.printStackTrace();
+        }
+    }
+}
+-------------------------------------------------------
+package fileupload;
+
+
+import java.util.concurrent.TimeUnit;
+import org.openqa.selenium.Alert;
+
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+public class WebDriverFluentWait {
+
+		public static void main(String[] args) {
+			System.setProperty("webdriver.chrome.driver", "./drivers/chromedriver.exe");
+			ChromeDriver driver=new ChromeDriver();
+
+			driver.get("http://toolsqa.wpengine.com/automation-practice-switch-windows/");
+			driver.manage().window().maximize();
+			driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+		
+			driver.findElementById("timingAlert").click();
+		
+			WebDriverWait wait = new WebDriverWait(driver, 10);
+
+			Alert myalert= wait.until(ExpectedConditions.alertIsPresent());
+			
+			myalert.accept();
+			System.out.println("the Alert is accpeted");
+			myalert.getText();
+			driver.close();
+			
+		}
+	}
+			
+			
+				
+
+
+
+----------------------------------------------------------
+package fileupload;
+
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+
+public class WebTable {
+
+	public static void main(String[] args) {
+		System.setProperty("webdriver.chrome.driver", "./drivers/chromedriver.exe");		
+		ChromeDriver driver=new ChromeDriver();
+		driver.manage().window().maximize();
+		driver.manage().timeouts().implicitlyWait(5000, TimeUnit.SECONDS);
+		driver.get("http://www.seleniumeasy.com/test/table-data-download-demo.html");
+		
+		WebElement table=driver.findElementByXPath("//table[@id='example']/tbody");
+		
+		List<WebElement> rows_table=table.findElements(By.tagName("tr"));
+		int rows_count=rows_table.size();
+		System.out.println(rows_count);
+		
+		
+		for (int row=0;row<rows_count;row++)
+		{
+			List<WebElement> column_rows=rows_table.get(row).findElements(By.tagName("td"));
+			int column_count=column_rows.size();
+			System.out.println(" Number of cell in Row " + row + "  are  " + column_count);
+			
+		for (int column=0;column<column_count;column++)
+		{
+			String cellvalue=column_rows.get(column).getText();
+			System.out.print(cellvalue+ " | ");
+		}
+			System.out.println(" ");
+		}
+		driver.close();
+		
+	}
+}
+----------------------------------------------------------
+package fileupload;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+public class Write_excel_xssf {
+ 
+    public static void main(String[] args) throws IOException {
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        XSSFSheet sheet = workbook.createSheet("Java Books");
+         
+        Object[][] bookData = {
+                {"kkk","lll","kkkk"},
+                {"lll","jjjj"}
+             
+             
+        };
+ 
+        int rowCount = 0;
+         
+        for (Object[] aBook : bookData) {
+            Row row = sheet.createRow(rowCount);
+            rowCount++;
+             
+            int columnCount = 0;
+             
+            for (Object field : aBook) {
+                Cell cell = row.createCell(++columnCount);
+                if (field instanceof String) {
+                    cell.setCellValue((String) field);
+                } else if (field instanceof Integer) {
+                    cell.setCellValue((Integer) field);
+                }
+            }
+             
+        }
+         
+         
+        try (FileOutputStream outputStream = new FileOutputStream("D://JavaBooks.xlsx")) {
+            workbook.write(outputStream);
+        }
+    }
+ 
+}
+--------------------------------------------------------------------
+
+package fileupload;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.RichTextString;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+public class Write_excel_xssf2 {
+ 
+    public static void main(String[] args) throws IOException {
+    	
+    	 // Finds the workbook instance for XLSX file
+        XSSFWorkbook myWorkBook = new XSSFWorkbook ();
+       
+        // Return first sheet from the XLSX workbook
+        XSSFSheet mySheet = myWorkBook.createSheet("java");
+     
+        // get the last row number to append new data          
+        int rownum = mySheet.getLastRowNum();         
+        
+       Map<String,Object[]> data=new HashMap<String, Object[]>();
+       data.put("1", new Object[] { "Sonya", "75K", "SALES", "Rupert"});
+       data.put("2", new Object[] { "Kris", "85K", "SALES", "Rupert"});
+       data.put("3", new Object[] { "Dave", "90K", "SALES", "Rupert"});
+    
+       // Set to Iterate and add rows into XLS file
+       Set<String> newRows = data.keySet();
+
+       for (String key : newRows) {
+        
+           // Creating a new Row in existing XLSX sheet
+           Row row = mySheet.createRow(rownum++);
+           
+           Object [] objArr = data.get(key);
+           
+           int cellnum = 0;
+           
+           for (Object obj : objArr) {
+        	   
+               Cell cell = row.createCell(cellnum++);
+                            
+               if (obj instanceof String) {
+                   cell.setCellValue((String) obj);
+               } 
+               
+               else if (obj instanceof Boolean) {
+                   cell.setCellValue((Boolean) obj);
+               }
+               else if (obj instanceof Date) {
+                   cell.setCellValue((RichTextString) obj);
+               } 
+               else if (obj instanceof Double) {
+                   cell.setCellValue((Double) obj);
+               }
+           }
+       }
+    
+       // open an OutputStream to save written data into XLSX file
+       FileOutputStream os = new FileOutputStream("D:\\JavaBooks.xlsx");
+       myWorkBook.write(os);
+       System.out.println("Writing on XLSX file Finished ...");
+
+ 
+}
+}
+-----------------------------------------------
+package fileupload;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+public class WriteExcel {
+
+@SuppressWarnings("resource")
+	public static void main(String[] args) throws IOException {
+		 try {
+			 
+		FileInputStream fis=new FileInputStream(new File("D:\\Writre.xlsx"));
+		
+		XSSFWorkbook workbook =new XSSFWorkbook(fis);
+		
+		XSSFSheet sh1 =workbook.getSheetAt(0);
+		
+		System.out.println(sh1.getRow(0).getCell(0).getStringCellValue());
+		 
+		 System.out.println(sh1.getRow(0).getCell(1).getStringCellValue());
+		 
+		 System.out.println(sh1.getRow(1).getCell(0).getStringCellValue());
+		 
+		 System.out.println(sh1.getRow(1).getCell(1).getStringCellValue());
+		 
+		 System.out.println(sh1.getRow(2).getCell(0).getStringCellValue());
+		 
+		 System.out.println(sh1.getRow(2).getCell(1).getStringCellValue());
+		 
+		// here createCell will create column
+		 
+		// and setCellvalue will set the value
+		 
+		 sh1.getRow(0).createCell(2).setCellValue("2.41.0");
+		 
+		 sh1.getRow(1).createCell(2).setCellValue("2.5");
+		 
+		 sh1.getRow(2).createCell(2).setCellValue("2.39");
+		 
+		 
+		// here we need to specify where you want to save file
+		 
+		 FileOutputStream fout=new FileOutputStream(new File("D:\\Writre.xlsx"));
+		 
+		 
+		// finally write content 
+		 
+		 workbook.write(fout);
+		 
+		// close the file
+		 
+		 fout.close();
+		 
+		  } catch (Exception e) {
+		 
+		   System.out.println(e.getMessage());
+		 
+		  }
+		 
+		 }
+		 
+		}
+	
+	
+----------------------------------------
